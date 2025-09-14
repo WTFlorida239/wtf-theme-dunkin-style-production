@@ -1,0 +1,20 @@
+{%- comment -%}
+  Single source of truth for flavor names.
+  👉 To update flavors, edit the comma-separated list below.
+  This snippet provides:
+    - Liquid array:  wtfKratomFlavors
+    - JS mirror:     window.WTF_FLAVORS
+{%- endcomment -%}
+
+{%- assign _flavors_csv = '
+Almond, Banana, Blackberry, Blue Coconut, Blue Raspberry, Blueberry,
+Caramel, Cherry, Coconut, Cotton Candy, Dragon Fruit, Grape, Green Apple,
+Guava, Honey, Kiwi, Lemon, Lime, Lychee, Mango, Orange, Passion Fruit,
+Peach, Pineapple, Pomegranate, Raspberry, Strawberry, Tangerine, Vanilla, Watermelon
+' -%}
+
+{%- assign wtfKratomFlavors = _flavors_csv | split: ',' | map: 'strip' | uniq -%}
+
+<script>
+  window.WTF_FLAVORS = {{ wtfKratomFlavors | json }};
+</script>

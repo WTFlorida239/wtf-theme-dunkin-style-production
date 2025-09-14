@@ -1,0 +1,186 @@
+{%- comment -%}
+  Kratom Teas — Size = variant; Flavor = line item property
+  Config:
+    - Set page metafield: namespace `wtf`, key `product_handle` → product handle to sell here.
+      If not set, defaults to 'custom-kratom-tea'.
+  Requirements:
+    - assets/wtf-variants.js (canonical variant resolver for Size chips)
+    - assets/wtf-ajax-cart.js (AJAX add-to-cart for [data-wtf-ajax] forms)
+    - layout/theme.liquid includes the cart count hydrator and the two assets once.
+{%- endcomment -%}
+
+{%- assign kratom_handle = page.metafields.wtf.product_handle | default: 'custom-kratom-tea' -%}
+{%- assign product = all_products[kratom_handle] -%}
+
+{%- if product == null -%}
+  <main id="MainContent" class="page-width" style="max-width:1100px;margin:0 auto;padding:16px;">
+    <h1>Kratom Teas</h1>
+    <p>
+      Product "<strong>{{ kratom_handle }}</strong>" not found. Set the page metafield
+      <code>wtf.product_handle</code> to a valid product handle and reload.
+    </p>
+  </main>
+{%- else -%}
+  <main id="MainContent" class="page-width" style="max-width:1100px;margin:0 auto;padding:16px;">
+    <header style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+      <img
+        src="{{ 'kratom_teas_150x150.png' | asset_url }}"
+        alt="Kratom Teas"
+        width="75"
+        height="75"
+        loading="eager"
+        decoding="async"
+        style="border-radius:12px;box-shadow:0 3px 10px rgba(0,0,0,.08);"
+      >
+      <div>
+        <h1 style="margin:0;font-weight:800;letter-spacing:.2px;">Kratom Teas</h1>
+        <div style="color:#666;">Choose a Size, pick a Flavor, add to cart.</div>
+      </div>
+    </header>
+
+    <form
+      action="/cart/add"
+      method="post"
+      enctype="multipart/form-data"
+      data-wtf-ajax
+      style="display:block; background:#fff;border:1px solid #eee;border-radius:16px;padding:16px 16px 20px;box-shadow:0 6px 24px rgba(0,0,0,.06);"
+    >
+      {%- comment -%} Expose product JSON so wtf-variants.js doesn’t need to fetch {%- endcomment -%}
+      <script>
+        window.WTF_PRODUCT_JSON={{ product | json }};
+      </script>
+
+      {%- comment -%} Size (variant option) — mapped by wtf-variants.js to hidden id {%- endcomment -%}
+      {%- assign size_option = '' -%}
+      {%- for opt in product.options_with_values -%}
+        {%- if opt.name == 'Size' or opt.name == 'size' -%}{%- assign size_option = opt -%}{%- endif -%}
+      {%- endfor -%}
+
+      <section style="margin-bottom:14px;">
+        <label style="display:block;font-weight:700;margin-bottom:8px;">Size</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          {%- if size_option != blank -%}
+            {%- for val in size_option.values -%}
+              <button
+                type="button"
+                class="wtf-chip{% if forloop.first %} wtf-chip--active{% endif %}"
+                data-option="{{ size_option.name }}"
+                data-value="{{ val }}"
+                aria-label="Size {{ val }}"
+                aria-checked="{% if forloop.first %}true{% else %}false{% endif %}"
+                role="radio"
+              >
+                {{ val }}
+              </button>
+            {%- endfor -%}
+          {%- else -%}
+            <em>No Size option found on this product. Add a <strong>Size</strong> option to variants.</em>
+          {%- endif -%}
+        </div>
+      </section>
+
+      {%- comment -%} Flavor (Line Item Property) {%- endcomment -%}
+      {%- assign flavors = product.metafields.wtf.flavors -%}
+      {%- assign fallback_flavors = 'Mango,Strawberry,Blue Razz,Watermelon,Pineapple,Peach,Lemon,Lime,Orange,Grape'
+        | split: ','
+      -%}
+
+      <section style="margin-bottom:14px;">
+        <label style="display:block;font-weight:700;margin-bottom:8px;">Flavor</label>
+        <input type="hidden" name="properties[Flavor]" id="kratomFlavor">
+        <div id="kratom-flavor-chips" style="display:flex;flex-wrap:wrap;gap:8px;">
+          {%- if flavors and flavors.size > 0 -%}
+            {%- for f in flavors -%}
+              <button
+                type="button"
+                class="wtf-chip{% if forloop.first %} wtf-chip--active{% endif %}"
+                data-flavor="{{ f | strip }}"
+              >
+                {{ f | strip }}
+              </button>
+            {%- endfor -%}
+          {%- else -%}
+            {%- for f in fallback_flavors -%}
+              <button
+                type="button"
+                class="wtf-chip{% if forloop.first %} wtf-chip--active{% endif %}"
+                data-flavor="{{ f | strip }}"
+              >
+                {{ f | strip }}
+              </button>
+            {%- endfor -%}
+          {%- endif -%}
+        </div>
+      </section>
+
+      {%- comment -%} Quantity {%- endcomment -%}
+      <section style="margin-bottom:14px;">
+        <label style="display:block;font-weight:700;margin-bottom:8px;">Quantity</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button
+            type="button"
+            class="wtf-chip"
+            onclick="(function(i){i.value=Math.max(1,parseInt(i.value||'1',10)-1)})(document.getElementById('kratomQty'))"
+          >
+            −
+          </button>
+          <input
+            id="kratomQty"
+            type="number"
+            name="quantity"
+            value="1"
+            min="1"
+            style="width:90px;text-align:center;padding:10px;border:1px solid #ddd;border-radius:999px;"
+          >
+          <button
+            type="button"
+            class="wtf-chip"
+            onclick="(function(i){i.value=Math.max(1,parseInt(i.value||'1',10)+1)})(document.getElementById('kratomQty'))"
+          >
+            +
+          </button>
+        </div>
+      </section>
+
+      {%- comment -%} Variant target + submit {%- endcomment -%}
+      <input type="hidden" name="id" id="kratomVariantId" value="">
+      <button type="submit" class="wtf-add-to-cart-btn" style="margin-top:6px;">
+        Add to Cart — <span id="kratom-price">{{ product.selected_or_first_available_variant.price | money }}</span>
+      </button>
+    </form>
+  </main>
+
+  {%- comment -%} Tiny helper for LIP flavor chips + respond to variant updates (price/img) {%- endcomment -%}
+  <script>
+    (function () {
+      // Flavor chips → properties[Flavor]
+      const chipsWrap = document.getElementById('kratom-flavor-chips');
+      const input = document.getElementById('kratomFlavor');
+      function setFlavor(val) {
+        if (!input) return;
+        input.value = val;
+        chipsWrap.querySelectorAll('.wtf-chip[data-flavor]').forEach((b) => {
+          b.classList.toggle('wtf-chip--active', b.getAttribute('data-flavor') === val);
+          b.setAttribute('aria-checked', b.classList.contains('wtf-chip--active') ? 'true' : 'false');
+        });
+      }
+      if (chipsWrap) {
+        const first = chipsWrap.querySelector('.wtf-chip[data-flavor]');
+        if (first) setFlavor(first.getAttribute('data-flavor'));
+        chipsWrap.addEventListener('click', (e) => {
+          const b = e.target.closest('.wtf-chip[data-flavor]');
+          if (!b) return;
+          setFlavor(b.getAttribute('data-flavor'));
+        });
+      }
+      // Update UI on variant change (from wtf-variants.js)
+      document.addEventListener('wtf:variant:change', function (e) {
+        var v = e.detail && e.detail.variant;
+        if (!v) return;
+        var money = (v.price / 100).toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+        var priceEl = document.getElementById('kratom-price');
+        if (priceEl) priceEl.textContent = money;
+      });
+    })();
+  </script>
+{%- endif -%}

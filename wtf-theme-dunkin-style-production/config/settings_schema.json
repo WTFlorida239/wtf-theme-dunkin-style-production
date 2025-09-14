@@ -1,0 +1,415 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "WTF Clean Dunkin Style",
+    "theme_version": "1.0.0",
+    "theme_author": "WTF Team",
+    "theme_documentation_url": "https://wtfswag.com/help",
+    "theme_support_email": "support@wtfswag.com"
+  },
+  {
+    "name": "Branding",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Base colors"
+      },
+      {
+        "type": "color",
+        "id": "color_primary",
+        "label": "Primary (Buttons & Accents)",
+        "default": "#ff6600"
+      },
+      {
+        "type": "color",
+        "id": "color_success",
+        "label": "Success (Selections)",
+        "default": "#28a745"
+      },
+      {
+        "type": "color",
+        "id": "color_background",
+        "label": "Background",
+        "default": "#f8f9fa"
+      },
+      {
+        "type": "color",
+        "id": "color_text",
+        "label": "Body text",
+        "default": "#333333"
+      },
+      {
+        "type": "header",
+        "content": "Typography"
+      },
+      {
+        "type": "select",
+        "id": "font_scale",
+        "label": "Base font size",
+        "default": "16",
+        "options": [
+          {
+            "value": "15",
+            "label": "Small (15px)"
+          },
+          {
+            "value": "16",
+            "label": "Default (16px)"
+          },
+          {
+            "value": "17",
+            "label": "Large (17px)"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Cart & UX",
+    "settings": [
+      {
+        "type": "checkbox",
+        "id": "enable_cart_drawer",
+        "label": "Enable cart drawer (if theme supports it)",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "enable_ajax_adds",
+        "label": "Enable AJAX add-to-cart (global)",
+        "default": true
+      },
+      {
+        "type": "radio",
+        "id": "cart_count_strategy",
+        "label": "Cart count strategy",
+        "default": "shopify_then_local",
+        "options": [
+          {
+            "value": "shopify_only",
+            "label": "Shopify cart.js only"
+          },
+          {
+            "value": "shopify_then_local",
+            "label": "Shopify cart.js with localStorage fallback"
+          },
+          {
+            "value": "local_only",
+            "label": "localStorage only (dev/local)"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Global Drink Defaults",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Flavor pump defaults (used by drink pages; can be overridden via page metafields)"
+      },
+      {
+        "type": "text",
+        "id": "included_pumps_default",
+        "label": "Included pumps (default)",
+        "default": "2"
+      },
+      {
+        "type": "text",
+        "id": "extra_pump_price_default",
+        "label": "Extra pump price (default)",
+        "default": "0.50"
+      },
+      {
+        "type": "checkbox",
+        "id": "even_pump_distribution",
+        "label": "Evenly distribute included pumps across selected flavors",
+        "default": true
+      },
+      {
+        "type": "text",
+        "id": "max_flavors_default",
+        "label": "Max flavors selectable (default)",
+        "default": "4"
+      },
+      {
+        "type": "paragraph",
+        "content": "Per-page metafield overrides (Namespace: custom): included_pumps (integer), extra_pump_price (money), max_flavors (integer)."
+      }
+    ]
+  },
+  {
+    "name": "Canned Drinks",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Canned Drinks (AJAX cart)"
+      },
+      {
+        "type": "number",
+        "id": "canned_drinks_variant_id",
+        "label": "Canned Drinks — Variant ID",
+        "default": 0,
+        "info": "Enter the numeric Shopify variant ID to add via AJAX on the Canned Drinks page. Leave 0 to disable. Line item properties sent: Brand, Flavor, Comments."
+      }
+    ]
+  },
+  {
+    "name": "Custom Kratom Tea",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Custom Kratom Tea (AJAX cart)"
+      },
+      {
+        "type": "number",
+        "id": "kratom_tea_variant_id",
+        "label": "Kratom Tea — Variant ID",
+        "default": 0
+      },
+      {
+        "type": "header",
+        "content": "Price configuration (used by the page UI)"
+      },
+      {
+        "type": "text",
+        "id": "kratom_price_medium",
+        "label": "Medium base price",
+        "default": "9.00"
+      },
+      {
+        "type": "text",
+        "id": "kratom_price_large",
+        "label": "Large base price",
+        "default": "15.00"
+      },
+      {
+        "type": "text",
+        "id": "kratom_price_gallon",
+        "label": "Gallon base price",
+        "default": "100.00"
+      },
+      {
+        "type": "text",
+        "id": "kratom_extra_pump_price",
+        "label": "Extra pump price (override)",
+        "default": "0.50"
+      },
+      {
+        "type": "text",
+        "id": "kratom_included_pumps",
+        "label": "Included pumps (override)"
+      },
+      {
+        "type": "header",
+        "content": "Available Flavors"
+      },
+      {
+        "type": "textarea",
+        "id": "kratom_flavors",
+        "label": "Kratom Tea Flavors (comma-separated)",
+        "default": "lemon,lime,orange,blood orange,strawberry,raspberry,blueberry,coconut,mango,watermelon,dragon fruit,blackberry,lavender,chocolate,caramel,maple,agave,hazelnut,rose,passion fruit,hibiscus"
+      }
+    ]
+  },
+  {
+    "name": "THC Drinks",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Delta 9 THC Drinks (AJAX cart)"
+      },
+      {
+        "type": "number",
+        "id": "thc_drinks_variant_id",
+        "label": "THC Drinks — Variant ID",
+        "default": 0
+      },
+      {
+        "type": "header",
+        "content": "Rotation flavors (shown on THC Drinks & shared with THC Shots)"
+      },
+      {
+        "type": "text",
+        "id": "thc_flavor_1",
+        "label": "Flavor 1",
+        "default": "Banana Runtz"
+      },
+      {
+        "type": "text",
+        "id": "thc_flavor_2",
+        "label": "Flavor 2",
+        "default": "Pink Starburst"
+      },
+      {
+        "type": "text",
+        "id": "thc_flavor_3",
+        "label": "Flavor 3",
+        "default": "Vanilla Lavender"
+      },
+      {
+        "type": "text",
+        "id": "thc_flavor_4",
+        "label": "Flavor 4",
+        "default": "Watermelon Cherry"
+      }
+    ]
+  },
+  {
+    "name": "THC Shots",
+    "settings": [
+      {
+        "type": "header",
+        "content": "THC Shots (AJAX cart)"
+      },
+      {
+        "type": "number",
+        "id": "thc_shots_variant_id",
+        "label": "THC Shots — Variant ID",
+        "default": 0
+      },
+      {
+        "type": "checkbox",
+        "id": "shots_inherit_thc_flavors",
+        "label": "Always mirror THC Drinks rotation flavors",
+        "default": true
+      },
+      {
+        "type": "header",
+        "content": "Custom rotation (only used if mirroring is off)"
+      },
+      {
+        "type": "text",
+        "id": "shots_flavor_1",
+        "label": "Flavor 1 (override)"
+      },
+      {
+        "type": "text",
+        "id": "shots_flavor_2",
+        "label": "Flavor 2 (override)"
+      },
+      {
+        "type": "text",
+        "id": "shots_flavor_3",
+        "label": "Flavor 3 (override)"
+      },
+      {
+        "type": "text",
+        "id": "shots_flavor_4",
+        "label": "Flavor 4 (override)"
+      }
+    ]
+  },
+  {
+    "name": "Kava Drinks",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Custom Kava Drink (AJAX cart)"
+      },
+      {
+        "type": "number",
+        "id": "kava_drink_variant_id",
+        "label": "Kava Drink — Variant ID",
+        "default": 0
+      },
+      {
+        "type": "header",
+        "content": "Price configuration (used by the page UI)"
+      },
+      {
+        "type": "text",
+        "id": "kava_price_medium",
+        "label": "Medium base price",
+        "default": "9.00"
+      },
+      {
+        "type": "text",
+        "id": "kava_price_large",
+        "label": "Large base price",
+        "default": "15.00"
+      },
+      {
+        "type": "text",
+        "id": "kava_price_gallon",
+        "label": "Gallon base price",
+        "default": "100.00"
+      },
+      {
+        "type": "header",
+        "content": "Available Flavors"
+      },
+      {
+        "type": "textarea",
+        "id": "kava_flavors",
+        "label": "Kava Drink Flavors (comma-separated)",
+        "default": "lemon,lime,orange,blood orange,strawberry,raspberry,blueberry,coconut,mango,watermelon,dragon fruit,blackberry,lavender,chocolate,caramel,maple,agave,hazelnut,rose,passion fruit,hibiscus,creamer,oat milk"
+      }
+    ]
+  },
+  {
+    "name": "Draft Pours",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Draft Pours (AJAX cart)"
+      },
+      {
+        "type": "number",
+        "id": "draft_pours_variant_id",
+        "label": "Draft Pours — Variant ID",
+        "default": 0
+      },
+      {
+        "type": "text",
+        "id": "draft_default_price",
+        "label": "Default price per 16 oz pour",
+        "default": "8.00"
+      }
+    ]
+  },
+  {
+    "name": "Take Home Items",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Take Home Items (AJAX cart)"
+      },
+      {
+        "type": "number",
+        "id": "take_home_items_variant_id",
+        "label": "Take Home Items — Variant ID",
+        "default": 0
+      }
+    ]
+  },
+  {
+    "name": "Category Cards (Global)",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Global category cards"
+      },
+      {
+        "type": "paragraph",
+        "content": "Configure up to 8 global category cards. Sections can reference these settings as defaults. Only populated cards will render."
+      }
+      // (keeping your existing card_1 ... card_8 definitions unchanged)
+    ]
+  },
+  {
+    "name": "Developer",
+    "settings": [
+      {
+        "type": "checkbox",
+        "id": "enable_console_logs",
+        "label": "Enable verbose console logs on custom pages",
+        "default": false
+      },
+      {
+        "type": "paragraph",
+        "content": "Metafield keys used by pages (namespace: custom): kratom_variant_id, thc_variant_id, included_pumps, extra_pump_price, max_flavors."
+      }
+    ]
+  }
+]

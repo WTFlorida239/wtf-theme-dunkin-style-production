@@ -1,0 +1,538 @@
+<!-- WTF Product Page with Flavor Selection (canonical) -->
+<!-- File: templates/product.liquid -->
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: #f8f9fa;
+  }
+
+  /* Header Navigation */
+  .wtf-header {
+    background: linear-gradient(135deg, #ff6600 0%, #ff8533 100%);
+    padding: 15px 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+  .wtf-nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+  }
+  .wtf-logo-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  .wtf-logo-circle {
+    background: #fff;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+  }
+  .wtf-logo-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+  .wtf-logo-text h1 {
+    color: #fff;
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  .wtf-logo-text p {
+    color: #fff;
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.9;
+  }
+  .wtf-main-nav {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+  }
+  .wtf-nav-link {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 16px;
+    padding: 8px 16px;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  }
+  .wtf-nav-link:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+  }
+  .wtf-cart-btn {
+    background: #fff;
+    color: #ff6600;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 10px 20px;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  .wtf-cart-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Product Page */
+  .wtf-product-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+  }
+  .wtf-back-button {
+    display: inline-block;
+    color: #ff6600;
+    text-decoration: none;
+    font-weight: 600;
+    margin-bottom: 30px;
+    padding: 10px 20px;
+    border: 2px solid #ff6600;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+  }
+  .wtf-back-button:hover {
+    background: #ff6600;
+    color: #fff;
+    transform: translateY(-2px);
+  }
+
+  .wtf-product-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: start;
+  }
+  .wtf-product-images {
+    position: sticky;
+    top: 120px;
+  }
+  .wtf-main-image {
+    width: 100%;
+    height: 500px;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+  }
+  .wtf-main-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .wtf-product-info {
+    background: #fff;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  }
+  .wtf-product-title {
+    font-size: 36px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 15px;
+  }
+
+  .wtf-product-price {
+    font-size: 28px;
+    font-weight: 700;
+    color: #ff6600;
+    margin-bottom: 25px;
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+  }
+  .wtf-product-price .compare-price {
+    text-decoration: line-through;
+    color: #999;
+    font-size: 24px;
+  }
+
+  .wtf-product-description {
+    font-size: 16px;
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 30px;
+  }
+
+  /* Variant chips */
+  .wtf-variant-section {
+    margin-bottom: 30px;
+  }
+  .wtf-variant-label {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+    display: block;
+  }
+  .wtf-variant-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .wtf-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 42px;
+    padding: 0 14px;
+    border: 1.5px solid #e9ecef;
+    border-radius: 999px;
+    cursor: pointer;
+    user-select: none;
+    transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+    background: #f8f9fa;
+  }
+  .wtf-chip:hover {
+    border-color: #ff6600;
+    transform: translateY(-1px);
+  }
+  .wtf-chip:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.25);
+  }
+  .wtf-chip--active,
+  .wtf-chip[aria-checked='true'] {
+    border-color: #ff6600;
+    box-shadow: 0 0 0 2px rgba(255, 102, 0, 0.2);
+  }
+
+  /* Quantity */
+  .wtf-quantity-section {
+    margin-bottom: 30px;
+  }
+  .wtf-quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  .wtf-quantity-input {
+    display: flex;
+    align-items: center;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .wtf-quantity-btn {
+    background: #f8f9fa;
+    border: none;
+    padding: 12px 16px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .wtf-quantity-btn:hover {
+    background: #ff6600;
+    color: #fff;
+  }
+  .wtf-quantity-number {
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    text-align: center;
+    width: 80px;
+  }
+
+  /* Add to Cart */
+  .wtf-add-to-cart {
+    width: 100%;
+    background: linear-gradient(135deg, #ff6600 0%, #ff8533 100%);
+    color: #fff;
+    border: none;
+    padding: 18px 30px;
+    font-size: 18px;
+    font-weight: 700;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3);
+    margin-bottom: 20px;
+  }
+  .wtf-add-to-cart:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 102, 0, 0.4);
+  }
+  .wtf-add-to-cart:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Footer */
+  .wtf-footer {
+    background: #333;
+    color: #fff;
+    padding: 40px 20px;
+    text-align: center;
+    margin-top: 60px;
+  }
+  .wtf-footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .wtf-footer h3 {
+    color: #ff6600;
+    margin-bottom: 20px;
+  }
+  .wtf-footer p {
+    margin-bottom: 10px;
+  }
+
+  /* Mobile */
+  @media (max-width: 768px) {
+    .wtf-nav-container {
+      flex-direction: column;
+      gap: 20px;
+    }
+    .wtf-main-nav {
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .wtf-product-container {
+      grid-template-columns: 1fr;
+      gap: 30px;
+    }
+    .wtf-product-images {
+      position: static;
+    }
+    .wtf-main-image {
+      height: 300px;
+    }
+    .wtf-product-info {
+      padding: 25px;
+    }
+    .wtf-product-title {
+      font-size: 28px;
+    }
+  }
+</style>
+
+<!-- Header Navigation -->
+<header class="wtf-header">
+  <div class="wtf-nav-container">
+    <div class="wtf-logo-section">
+      <div class="wtf-logo-circle">
+        <img src="{{ 'wtf-logo.png' | asset_url }}" alt="WTF Logo" loading="lazy" decoding="async">
+      </div>
+      <div class="wtf-logo-text">
+        <h1>{{ shop.name | default: 'WTF' }}</h1>
+        <p>Welcome To Florida</p>
+      </div>
+    </div>
+    <nav class="wtf-main-nav">
+      <a href="{{ routes.root_url }}" class="wtf-nav-link">Home</a>
+      <a href="{{ routes.collections_url }}" class="wtf-nav-link">Shop</a>
+      <a href="{{ pages['about'].url | default: '#about' }}" class="wtf-nav-link">About</a>
+      <a href="{{ pages['contact'].url | default: '#contact' }}" class="wtf-nav-link">Contact</a>
+      <a href="{{ routes.cart_url }}" class="wtf-cart-btn"
+        >🛒 Cart (<span data-cart-count id="wtf-cart-count">{{ cart.item_count }}</span>)</a
+      >
+    </nav>
+  </div>
+</header>
+
+<!-- Product Page -->
+<div class="wtf-product-page">
+  <a href="{{ collection.url | default: routes.root_url }}" class="wtf-back-button"
+    >← Back to {{ collection.title | default: 'Menu' -}}
+  </a>
+
+  <div class="wtf-product-container">
+    <!-- Product Images -->
+    <div class="wtf-product-images">
+      <div class="wtf-main-image">
+        {% if product.featured_image %}
+          <img
+            src="{{ product.featured_image | img_url: '800x' }}"
+            alt="{{ product.title }}"
+            id="main-product-image"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+          >
+        {% else %}
+          <img
+            src="{{ 'placeholder-product.png' | asset_url }}"
+            alt="{{ product.title }}"
+            id="main-product-image"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+          >
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Product Info -->
+    <div class="wtf-product-info">
+      <h1 class="wtf-product-title">{{ product.title }}</h1>
+
+      <div class="wtf-product-price">
+        {% if product.compare_at_price > product.price %}
+          <span class="compare-price">{{ product.compare_at_price | money }}</span>
+        {% endif %}
+        <span id="product-price">{{ product.selected_or_first_available_variant.price | money }}</span>
+      </div>
+
+      {% if product.description != blank %}
+        <div class="wtf-product-description">
+          {{ product.description }}
+        </div>
+      {% endif %}
+
+      <!-- Purchase form: canonical wiring -->
+      <form action="/cart/add" method="post" enctype="multipart/form-data" id="product-form" data-wtf-ajax>
+        <!-- Variant chips (data-option/data-value) -->
+        {% unless product.has_only_default_variant %}
+          {% for option in product.options_with_values %}
+            <div class="wtf-variant-section">
+              <label class="wtf-variant-label">{{ option.name }}:</label>
+              <div class="wtf-variant-options">
+                {% for value in option.values %}
+                  {%- assign is_first = forloop.first -%}
+                  <button
+                    type="button"
+                    class="wtf-chip{% if is_first %} wtf-chip--active{% endif %}"
+                    data-option="{{ option.name }}"
+                    data-value="{{ value }}"
+                    aria-label="{{ option.name }} {{ value }}"
+                    aria-checked="{% if is_first %}true{% else %}false{% endif %}"
+                    role="radio"
+                  >
+                    {{ value }}
+                  </button>
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
+        {% endunless %}
+
+        <!-- Quantity -->
+        <div class="wtf-quantity-section">
+          <label class="wtf-variant-label">Quantity:</label>
+          <div class="wtf-quantity-controls">
+            <div class="wtf-quantity-input">
+              <button type="button" class="wtf-quantity-btn" onclick="changeQuantity(-1)">−</button>
+              <input type="number" name="quantity" value="1" min="1" class="wtf-quantity-number" id="quantity">
+              <button type="button" class="wtf-quantity-btn" onclick="changeQuantity(1)">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden variant ID (filled by wtf-variants.js) -->
+        <input type="hidden" name="id" id="variant-id" value="">
+
+        <!-- Add to Cart -->
+        <button
+          type="submit"
+          class="wtf-add-to-cart"
+          id="add-to-cart-btn"
+          {% unless product.available %}
+            disabled
+          {% endunless %}
+        >
+          {% if product.available %}
+            Add to Cart — <span id="cart-price">{{ product.selected_or_first_available_variant.price | money }}</span>
+          {% else %}
+            Sold Out
+          {% endif %}
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="wtf-footer">
+  <div class="wtf-footer-content">
+    <h3>WTF - Welcome To Florida</h3>
+    <p>📍 1520 SE 46th Ln, Unit B, Cape Coral, FL 33904</p>
+    <p>☎️ (239) 955-0314</p>
+    <p>🌐 Premium Kava Bar & Cannabis Products</p>
+    <p style="margin-top:20px; opacity:.7;">
+      © {{ 'now' | date: '%Y' }}
+      {{ shop.name | default: 'WTF Welcome To Florida' }}. All rights reserved.
+    </p>
+  </div>
+</footer>
+
+<script>
+  // Minimal, non-duplicative helpers
+  function changeQuantity(delta) {
+    var q = document.getElementById('quantity');
+    var n = Math.max(1, parseInt(q.value || '1', 10) + delta);
+    q.value = n;
+  }
+
+  // React to canonical resolver updates to keep price/image in sync.
+  document.addEventListener('wtf:variant:change', function (e) {
+    var v = e.detail && e.detail.variant;
+    if (!v) return;
+    // Price
+    var priceEl = document.getElementById('product-price');
+    var cartPriceEl = document.getElementById('cart-price');
+    var money = (v.price / 100).toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+    if (priceEl) priceEl.textContent = money;
+    if (cartPriceEl) cartPriceEl.textContent = money;
+
+    // Availability
+    var btn = document.getElementById('add-to-cart-btn');
+    if (btn) {
+      if (v.available) {
+        btn.disabled = false;
+        btn.innerHTML = 'Add to Cart — <span id="cart-price">' + money + '</span>';
+      } else {
+        btn.disabled = true;
+        btn.textContent = 'Sold Out';
+      }
+    }
+
+    // Image
+    if (v.featured_image && v.featured_image.src) {
+      var img = document.getElementById('main-product-image');
+      if (img) img.src = v.featured_image.src;
+    }
+  });
+</script>
+
+{%- comment -%}
+  NOTE:
+  - This template intentionally does NOT include an inline submit handler.
+  - The add-to-cart and variant mapping are handled by:
+    - assets/wtf-variants.js  (maps data-option/data-value → hidden input name="id")
+    - assets/wtf-ajax-cart.js (intercepts [data-wtf-ajax] submit and updates cart)
+  Ensure both are included once in layout/theme.liquid.
+{%- endcomment -%}
