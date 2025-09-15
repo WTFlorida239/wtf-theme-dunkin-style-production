@@ -46,6 +46,14 @@
                     >
                   {%- endif -%}
                 </div>
+              
+              {%- when 'hours' -%}
+                <div class="footer-block__details-content">
+                  {%- if block.settings.heading != blank -%}
+                    <h2 class="footer-block__heading">{{ block.settings.heading }}</h2>
+                  {%- endif -%}
+                  {% render 'wtf-operating-hours', format: 'full' %}
+                </div>
             {%- endcase -%}
           </div>
         {%- endfor -%}
@@ -271,6 +279,18 @@
           "unit": "px",
           "label": "Image width",
           "default": 100
+        }
+      ]
+    },
+    {
+      "type": "hours",
+      "name": "Operating Hours",
+      "settings": [
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Store Hours"
         }
       ]
     }

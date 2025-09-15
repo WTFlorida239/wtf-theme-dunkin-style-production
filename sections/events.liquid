@@ -1,0 +1,541 @@
+{% comment %}
+  Section: events.liquid
+  Facebook events sync and display
+  Source: https://www.facebook.com/people/WTF-Welcome-to-Florida/61566655386481/
+{% endcomment %}
+
+<section class="wtf-events" data-section-id="{{ section.id }}">
+  <div class="events__container page-width">
+    <div class="events__header">
+      <h2 class="events__title">{{ section.settings.title | default: 'Upcoming Events' }}</h2>
+      <p class="events__subtitle">{{ section.settings.subtitle | default: 'Join us for special events and activities' }}</p>
+    </div>
+
+    <!-- Today/Tonight Highlight -->
+    <div class="events__highlight" data-events-highlight>
+      <!-- Will be populated by JavaScript -->
+    </div>
+
+    <!-- Events Grid -->
+    <div class="events__grid" data-events-grid>
+      {% for block in section.blocks %}
+        {% case block.type %}
+          {% when 'event' %}
+            <div class="event-card" {{ block.shopify_attributes }}>
+              {% if block.settings.image %}
+                <div class="event-card__image">
+                  <img 
+                    src="{{ block.settings.image | image_url: width: 400 }}"
+                    alt="{{ block.settings.title }}"
+                    loading="lazy"
+                    width="400"
+                    height="300"
+                  >
+                </div>
+              {% endif %}
+              
+              <div class="event-card__content">
+                <div class="event-card__date">
+                  <span class="event-card__day">{{ block.settings.date | date: "%d" }}</span>
+                  <span class="event-card__month">{{ block.settings.date | date: "%b" }}</span>
+                </div>
+                
+                <h3 class="event-card__title">{{ block.settings.title }}</h3>
+                
+                <div class="event-card__details">
+                  <span class="event-card__time">
+                    <svg class="icon icon--clock" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M8 1.5A6.5 6.5 0 1 0 14.5 8 6.507 6.507 0 0 0 8 1.5zm2.5 7h-3a.5.5 0 0 1-.5-.5V4a.5.5 0 0 1 1 0v3.5h2.5a.5.5 0 0 1 0 1z"/>
+                    </svg>
+                    {{ block.settings.time }}
+                  </span>
+                  
+                  {% if block.settings.location %}
+                    <span class="event-card__location">
+                      <svg class="icon icon--location" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 1a5 5 0 0 0-5 5c0 4.5 5 9 5 9s5-4.5 5-9a5 5 0 0 0-5-5zm0 7a2 2 0 1 1 2-2 2 2 0 0 1-2 2z"/>
+                      </svg>
+                      {{ block.settings.location }}
+                    </span>
+                  {% endif %}
+                </div>
+                
+                {% if block.settings.description %}
+                  <p class="event-card__description">{{ block.settings.description }}</p>
+                {% endif %}
+                
+                <div class="event-card__actions">
+                  {% if block.settings.facebook_url %}
+                    <a href="{{ block.settings.facebook_url }}" class="event-card__link" target="_blank" rel="noopener">
+                      View on Facebook
+                    </a>
+                  {% endif %}
+                  
+                  {% if block.settings.ticket_url %}
+                    <a href="{{ block.settings.ticket_url }}" class="event-card__button btn btn--primary" target="_blank" rel="noopener">
+                      Get Tickets
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+        {% endcase %}
+      {% endfor %}
+    </div>
+
+    <!-- Empty State -->
+    <div class="events__empty" data-events-empty style="display: none;">
+      <svg class="events__empty-icon" width="64" height="64" viewBox="0 0 64 64" fill="none">
+        <circle cx="32" cy="32" r="30" stroke="currentColor" stroke-width="2" opacity="0.2"/>
+        <path d="M22 28h20M22 36h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <p class="events__empty-text">No upcoming events at the moment</p>
+      <p class="events__empty-subtext">Check back soon or follow us on social media for updates!</p>
+    </div>
+
+    <!-- Loading State -->
+    <div class="events__loading" data-events-loading style="display: none;">
+      <div class="spinner"></div>
+      <p>Loading events...</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .wtf-events {
+    padding: 60px 0;
+    background: #f8f9fa;
+  }
+  
+  .events__container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+  
+  .events__header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  
+  .events__title {
+    font-size: 36px;
+    font-weight: bold;
+    color: #212529;
+    margin-bottom: 10px;
+  }
+  
+  .events__subtitle {
+    font-size: 18px;
+    color: #6c757d;
+  }
+  
+  /* Highlight Section */
+  .events__highlight {
+    margin-bottom: 40px;
+  }
+  
+  .highlight-banner {
+    background: linear-gradient(135deg, {{ settings.color_primary | default: '#ff6600' }}, #ff8533);
+    color: white;
+    padding: 30px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(255, 102, 0, 0.2);
+  }
+  
+  .highlight-banner__badge {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+  }
+  
+  .highlight-banner__title {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  
+  .highlight-banner__time {
+    font-size: 20px;
+    opacity: 0.95;
+    margin-bottom: 20px;
+  }
+  
+  .highlight-banner__button {
+    display: inline-block;
+    background: white;
+    color: {{ settings.color_primary | default: '#ff6600' }};
+    padding: 12px 30px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .highlight-banner__button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Events Grid */
+  .events__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 30px;
+    margin-bottom: 40px;
+  }
+  
+  .event-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .event-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  }
+  
+  .event-card__image {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+  }
+  
+  .event-card__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .event-card__content {
+    padding: 20px;
+    position: relative;
+  }
+  
+  .event-card__date {
+    position: absolute;
+    top: -30px;
+    right: 20px;
+    background: {{ settings.color_primary | default: '#ff6600' }};
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    min-width: 60px;
+  }
+  
+  .event-card__day {
+    display: block;
+    font-size: 24px;
+    font-weight: bold;
+    line-height: 1;
+  }
+  
+  .event-card__month {
+    display: block;
+    font-size: 12px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+  
+  .event-card__title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #212529;
+    margin-bottom: 15px;
+    padding-right: 80px;
+  }
+  
+  .event-card__details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    color: #6c757d;
+  }
+  
+  .event-card__time,
+  .event-card__location {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .icon {
+    flex-shrink: 0;
+  }
+  
+  .event-card__description {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #495057;
+    margin-bottom: 20px;
+  }
+  
+  .event-card__actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  
+  .event-card__link {
+    color: {{ settings.color_primary | default: '#ff6600' }};
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  
+  .event-card__link:hover {
+    text-decoration: underline;
+  }
+  
+  .event-card__button {
+    margin-left: auto;
+  }
+  
+  /* Empty State */
+  .events__empty {
+    text-align: center;
+    padding: 60px 20px;
+  }
+  
+  .events__empty-icon {
+    color: #dee2e6;
+    margin-bottom: 20px;
+  }
+  
+  .events__empty-text {
+    font-size: 18px;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 10px;
+  }
+  
+  .events__empty-subtext {
+    font-size: 14px;
+    color: #6c757d;
+  }
+  
+  /* Loading State */
+  .events__loading {
+    text-align: center;
+    padding: 40px;
+  }
+  
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid {{ settings.color_primary | default: '#ff6600' }};
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .events__grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    
+    .events__title {
+      font-size: 28px;
+    }
+    
+    .highlight-banner {
+      padding: 20px;
+    }
+    
+    .highlight-banner__title {
+      font-size: 22px;
+    }
+  }
+</style>
+
+<script>
+  // Facebook Events Sync Handler
+  document.addEventListener('DOMContentLoaded', function() {
+    const eventsManager = {
+      facebookPageId: '61566655386481',
+      
+      init() {
+        this.checkTodayEvents();
+        this.loadFacebookEvents();
+      },
+      
+      checkTodayEvents() {
+        const highlight = document.querySelector('[data-events-highlight]');
+        if (!highlight) return;
+        
+        // Check if any events are today/tonight
+        const today = new Date();
+        const events = document.querySelectorAll('.event-card');
+        
+        events.forEach(card => {
+          const dateEl = card.querySelector('.event-card__date');
+          if (dateEl) {
+            const day = parseInt(dateEl.querySelector('.event-card__day').textContent);
+            const month = dateEl.querySelector('.event-card__month').textContent;
+            
+            if (day === today.getDate()) {
+              // Create highlight banner
+              const title = card.querySelector('.event-card__title').textContent;
+              const time = card.querySelector('.event-card__time').textContent;
+              const isEvening = today.getHours() >= 17;
+              
+              highlight.innerHTML = `
+                <div class="highlight-banner">
+                  <div class="highlight-banner__badge">${isEvening ? 'Tonight' : 'Today'}</div>
+                  <h3 class="highlight-banner__title">${title}</h3>
+                  <p class="highlight-banner__time">${time}</p>
+                  <a href="#${card.id}" class="highlight-banner__button">Learn More</a>
+                </div>
+              `;
+            }
+          }
+        });
+      },
+      
+      async loadFacebookEvents() {
+        // This would typically call Facebook Graph API
+        // For now, we'll simulate with static data
+        // In production, this would require server-side implementation
+        
+        const loading = document.querySelector('[data-events-loading]');
+        const empty = document.querySelector('[data-events-empty]');
+        const grid = document.querySelector('[data-events-grid]');
+        
+        // Show loading state
+        if (loading) loading.style.display = 'block';
+        
+        try {
+          // Simulated API call
+          // const response = await fetch(`/apps/wtf/facebook-events?page_id=${this.facebookPageId}`);
+          // const events = await response.json();
+          
+          // For demonstration, check if we have any events
+          const hasEvents = grid && grid.children.length > 0;
+          
+          if (!hasEvents && empty) {
+            empty.style.display = 'block';
+          }
+        } catch (error) {
+          console.error('Failed to load Facebook events:', error);
+        } finally {
+          if (loading) loading.style.display = 'none';
+        }
+      }
+    };
+    
+    eventsManager.init();
+  });
+</script>
+
+{% schema %}
+{
+  "name": "Events",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section Title",
+      "default": "Upcoming Events"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "Section Subtitle",
+      "default": "Join us for special events and activities"
+    },
+    {
+      "type": "text",
+      "id": "facebook_page_id",
+      "label": "Facebook Page ID",
+      "default": "61566655386481",
+      "info": "Your Facebook Page ID for events sync"
+    },
+    {
+      "type": "checkbox",
+      "id": "auto_sync",
+      "label": "Enable Auto Sync",
+      "default": true,
+      "info": "Automatically sync events from Facebook daily"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "event",
+      "name": "Event",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Event Title",
+          "default": "Live Music Night"
+        },
+        {
+          "type": "text",
+          "id": "date",
+          "label": "Event Date",
+          "info": "Format: YYYY-MM-DD",
+          "default": "2024-01-20"
+        },
+        {
+          "type": "text",
+          "id": "time",
+          "label": "Event Time",
+          "default": "7:00 PM - 10:00 PM"
+        },
+        {
+          "type": "text",
+          "id": "location",
+          "label": "Location",
+          "default": "WTF Kava Bar"
+        },
+        {
+          "type": "textarea",
+          "id": "description",
+          "label": "Description"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Event Image"
+        },
+        {
+          "type": "url",
+          "id": "facebook_url",
+          "label": "Facebook Event URL"
+        },
+        {
+          "type": "url",
+          "id": "ticket_url",
+          "label": "Ticket URL"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Events"
+    }
+  ]
+}
+{% endschema %}

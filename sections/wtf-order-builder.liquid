@@ -1,0 +1,1288 @@
+{% comment %}
+  Section: wtf-order-builder.liquid
+  Mobile-first drink builder with chip-based modifiers
+  Dunkin'/Starbucks style ordering experience
+{% endcomment %}
+
+<section class="wtf-order-builder" data-section-id="{{ section.id }}">
+  <div class="order-builder__container page-width">
+    
+    <!-- Category Selection -->
+    <div class="order-builder__categories">
+      <h2 class="order-builder__title">{{ section.settings.title | default: 'Build Your Drink' }}</h2>
+      
+      <div class="category-tabs" role="tablist">
+        <button class="category-tab category-tab--active" role="tab" aria-selected="true" data-category="kava">
+          <span class="category-tab__icon">🌿</span>
+          <span class="category-tab__label">Kava</span>
+        </button>
+        <button class="category-tab" role="tab" aria-selected="false" data-category="kratom">
+          <span class="category-tab__icon">🍃</span>
+          <span class="category-tab__label">Kratom</span>
+        </button>
+        <button class="category-tab" role="tab" aria-selected="false" data-category="delta9">
+          <span class="category-tab__icon">🌟</span>
+          <span class="category-tab__label">Δ9 Drinks</span>
+        </button>
+        <button class="category-tab" role="tab" aria-selected="false" data-category="drafts">
+          <span class="category-tab__icon">🍺</span>
+          <span class="category-tab__label">Drafts</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Product Selection (Hidden, auto-selected based on category) -->
+    <div class="order-builder__product-selector" data-product-selector style="display: none;">
+      <select data-product-select>
+        <option value="kava-drink" data-category="kava" data-price="8" data-product-type="kava">Kava Drink</option>
+        <option value="kratom-tea" data-category="kratom" data-price="8" data-product-type="kratom">Kratom Tea</option>
+        <option value="delta9-drink" data-category="delta9" data-price="12" data-product-type="delta9">Delta-9 Drink</option>
+        <option value="draft-pour" data-category="drafts" data-price="10" data-product-type="draft">Draft Pour</option>
+      </select>
+    </div>
+
+    <!-- Drink Builder Interface -->
+    <div class="drink-builder" data-drink-builder>
+      
+      <!-- Size Selection -->
+      <div class="modifier-section" data-modifier-section="size">
+        <h3 class="modifier-section__title">
+          <span class="modifier-section__number">1</span>
+          Size
+          <span class="modifier-section__required">Required</span>
+        </h3>
+        
+        <div class="chips-grid chips-grid--sizes">
+          <button class="chip chip--size" data-size-option="small" aria-pressed="false">
+            <span class="chip__label">Small</span>
+            <span class="chip__detail">12oz</span>
+            <span class="chip__price">Base</span>
+          </button>
+          <button class="chip chip--size chip--selected" data-size-option="medium" aria-pressed="true">
+            <span class="chip__label">Medium</span>
+            <span class="chip__detail">16oz</span>
+            <span class="chip__price">+$1</span>
+          </button>
+          <button class="chip chip--size" data-size-option="large" aria-pressed="false">
+            <span class="chip__label">Large</span>
+            <span class="chip__detail">20oz</span>
+            <span class="chip__price">+$2</span>
+          </button>
+          <button class="chip chip--size chip--gallon" data-size-option="gallon" aria-pressed="false">
+            <span class="chip__label">Gallon</span>
+            <span class="chip__detail">128oz</span>
+            <span class="chip__price">+$35</span>
+          </button>
+        </div>
+        
+        <!-- Upsell Banner -->
+        <div class="upsell-banner" data-upsell-banner></div>
+      </div>
+
+      <!-- Strain Selection (Kratom only) -->
+      <div class="modifier-section" data-modifier-section="strain" style="display: none;">
+        <h3 class="modifier-section__title">
+          <span class="modifier-section__number">2</span>
+          Strain
+          <span class="modifier-section__required">Required</span>
+        </h3>
+        
+        <div class="chips-grid chips-grid--strains">
+          <button class="chip chip--strain" data-strain-option="green" aria-pressed="false">
+            <span class="chip__label">Green</span>
+            <span class="chip__detail">Balanced</span>
+          </button>
+          <button class="chip chip--strain" data-strain-option="red" aria-pressed="false">
+            <span class="chip__label">Red</span>
+            <span class="chip__detail">Relaxing</span>
+          </button>
+          <button class="chip chip--strain" data-strain-option="white" aria-pressed="false">
+            <span class="chip__label">White</span>
+            <span class="chip__detail">Energizing</span>
+          </button>
+          <button class="chip chip--strain" data-strain-option="yellow" aria-pressed="false">
+            <span class="chip__label">Yellow</span>
+            <span class="chip__detail">Smooth</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Flavor Selection -->
+      <div class="modifier-section" data-modifier-section="flavors" data-flavor-group>
+        <h3 class="modifier-section__title">
+          <span class="modifier-section__number">3</span>
+          Flavors
+          <span class="modifier-section__optional">Optional</span>
+        </h3>
+        
+        <div class="flavor-search">
+          <input type="text" class="flavor-search__input" placeholder="Search flavors..." data-flavor-search>
+        </div>
+        
+        <div class="chips-grid chips-grid--flavors" data-flavors-grid>
+          <!-- Popular Flavors -->
+          <button class="chip chip--flavor" data-flavor-option="strawberry" aria-pressed="false">
+            <span class="chip__label">🍓 Strawberry</span>
+          </button>
+          <button class="chip chip--flavor" data-flavor-option="mango" aria-pressed="false">
+            <span class="chip__label">🥭 Mango</span>
+          </button>
+          <button class="chip chip--flavor" data-flavor-option="coconut" aria-pressed="false">
+            <span class="chip__label">🥥 Coconut</span>
+          </button>
+          <button class="chip chip--flavor" data-flavor-option="lemon" aria-pressed="false">
+            <span class="chip__label">🍋 Lemon</span>
+          </button>
+          <button class="chip chip--flavor" data-flavor-option="lime" aria-pressed="false">
+            <span class="chip__label">Lime</span>
+          </button>
+          <button class="chip chip--flavor" data-flavor-option="orange" aria-pressed="false">
+            <span class="chip__label">🍊 Orange</span>
+          </button>
+          <button class="chip chip--flavor" data-flavor-option="watermelon" aria-pressed="false">
+            <span class="chip__label">🍉 Watermelon</span>
+          </button>
+          <button class="chip chip--flavor" data-flavor-option="blueberry" aria-pressed="false">
+            <span class="chip__label">🫐 Blueberry</span>
+          </button>
+          <button class="chip chip--flavor" data-flavor-option="raspberry" aria-pressed="false">
+            <span class="chip__label">Raspberry</span>
+          </button>
+          <button class="chip chip--flavor" data-flavor-option="dragon-fruit" aria-pressed="false">
+            <span class="chip__label">Dragon Fruit</span>
+          </button>
+          <button class="chip chip--flavor" data-flavor-option="passion-fruit" aria-pressed="false">
+            <span class="chip__label">Passion Fruit</span>
+          </button>
+          <button class="chip chip--flavor" data-flavor-option="caramel" aria-pressed="false">
+            <span class="chip__label">Caramel</span>
+          </button>
+          <button class="chip chip--flavor" data-flavor-option="chocolate" aria-pressed="false">
+            <span class="chip__label">🍫 Chocolate</span>
+          </button>
+          <button class="chip chip--flavor" data-flavor-option="vanilla" aria-pressed="false">
+            <span class="chip__label">Vanilla</span>
+          </button>
+          <button class="chip chip--flavor" data-flavor-option="hazelnut" aria-pressed="false">
+            <span class="chip__label">Hazelnut</span>
+          </button>
+        </div>
+        
+        <div class="flavor-counter" data-flavor-counter>
+          <span class="flavor-counter__text">0 flavors selected</span>
+          <span class="flavor-counter__limit">Max 3 flavors</span>
+        </div>
+      </div>
+
+      <!-- Concentration (Delta-9 Gallon only) -->
+      <div class="modifier-section" data-modifier-section="concentration" data-concentration-group style="display: none;">
+        <h3 class="modifier-section__title">
+          <span class="modifier-section__number">4</span>
+          Concentration
+          <span class="modifier-section__required">Required</span>
+        </h3>
+        
+        <div class="chips-grid chips-grid--concentration">
+          <button class="chip chip--concentration" data-concentration="regular" aria-pressed="true">
+            <span class="chip__label">Regular</span>
+            <span class="chip__detail">Standard</span>
+          </button>
+          <button class="chip chip--concentration" data-concentration="strong" aria-pressed="false">
+            <span class="chip__label">Strong</span>
+            <span class="chip__detail">1.5x</span>
+            <span class="chip__price">+$10</span>
+          </button>
+          <button class="chip chip--concentration" data-concentration="extra" aria-pressed="false">
+            <span class="chip__label">Extra Strong</span>
+            <span class="chip__detail">2x</span>
+            <span class="chip__price">+$20</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sweetener -->
+      <div class="modifier-section" data-modifier-section="sweetener">
+        <h3 class="modifier-section__title">
+          <span class="modifier-section__number">4</span>
+          Sweetener
+          <span class="modifier-section__optional">Optional</span>
+        </h3>
+        
+        <div class="chips-grid chips-grid--sweetener">
+          <button class="chip chip--sweetener" data-sweetener-option="none" aria-pressed="true">
+            <span class="chip__label">None</span>
+          </button>
+          <button class="chip chip--sweetener" data-sweetener-option="sugar" aria-pressed="false">
+            <span class="chip__label">Sugar</span>
+          </button>
+          <button class="chip chip--sweetener" data-sweetener-option="honey" aria-pressed="false">
+            <span class="chip__label">🍯 Honey</span>
+          </button>
+          <button class="chip chip--sweetener" data-sweetener-option="agave" aria-pressed="false">
+            <span class="chip__label">Agave</span>
+          </button>
+          <button class="chip chip--sweetener" data-sweetener-option="stevia" aria-pressed="false">
+            <span class="chip__label">Stevia</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Creamer (Kava only) -->
+      <div class="modifier-section" data-modifier-section="creamer" data-creamer-group style="display: none;">
+        <h3 class="modifier-section__title">
+          <span class="modifier-section__number">5</span>
+          Creamer
+          <span class="modifier-section__optional">Optional</span>
+        </h3>
+        
+        <div class="chips-grid chips-grid--creamer">
+          <button class="chip chip--creamer" data-creamer-option="none" aria-pressed="true">
+            <span class="chip__label">None</span>
+          </button>
+          <button class="chip chip--creamer" data-creamer-option="oat-milk" aria-pressed="false">
+            <span class="chip__label">Oat Milk</span>
+          </button>
+          <button class="chip chip--creamer" data-creamer-option="coconut-milk" aria-pressed="false">
+            <span class="chip__label">Coconut Milk</span>
+          </button>
+          <button class="chip chip--creamer" data-creamer-option="almond-milk" aria-pressed="false">
+            <span class="chip__label">Almond Milk</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Ice Level -->
+      <div class="modifier-section" data-modifier-section="ice">
+        <h3 class="modifier-section__title">
+          <span class="modifier-section__number">6</span>
+          Ice Level
+        </h3>
+        
+        <div class="chips-grid chips-grid--ice">
+          <button class="chip chip--ice" data-ice-option="no-ice" aria-pressed="false">
+            <span class="chip__label">No Ice</span>
+          </button>
+          <button class="chip chip--ice" data-ice-option="light" aria-pressed="false">
+            <span class="chip__label">Light Ice</span>
+          </button>
+          <button class="chip chip--ice chip--selected" data-ice-option="regular" aria-pressed="true">
+            <span class="chip__label">Regular Ice</span>
+          </button>
+          <button class="chip chip--ice" data-ice-option="extra" aria-pressed="false">
+            <span class="chip__label">Extra Ice</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Boosters -->
+      <div class="modifier-section" data-modifier-section="boosters" data-boosters-container>
+        <h3 class="modifier-section__title">
+          <span class="modifier-section__number">7</span>
+          Power Boosters
+          <span class="modifier-section__optional">Optional</span>
+        </h3>
+        <!-- Boosters will be rendered by wtf-upselling.js -->
+      </div>
+
+      <!-- Special Instructions -->
+      <div class="modifier-section" data-modifier-section="instructions">
+        <h3 class="modifier-section__title">
+          <span class="modifier-section__number">8</span>
+          Special Instructions
+          <span class="modifier-section__optional">Optional</span>
+        </h3>
+        
+        <textarea 
+          class="instructions-input" 
+          data-instructions
+          placeholder="Any special requests? Let us know!"
+          rows="3"
+        ></textarea>
+      </div>
+
+      <!-- Price Summary -->
+      <div class="price-summary">
+        <div class="price-summary__breakdown" data-price-breakdown>
+          <div class="price-line">
+            <span>Base Price</span>
+            <span data-base-price>$8.00</span>
+          </div>
+          <div class="price-line" data-size-upcharge style="display: none;">
+            <span>Size Upgrade</span>
+            <span data-size-price>+$0.00</span>
+          </div>
+          <div class="price-line" data-boosters-upcharge style="display: none;">
+            <span>Boosters</span>
+            <span data-boosters-price>+$0.00</span>
+          </div>
+        </div>
+        
+        <div class="price-summary__total">
+          <span>Total</span>
+          <span data-total-price>$8.00</span>
+        </div>
+        
+        <div class="price-summary__preview" data-price-preview></div>
+      </div>
+
+      <!-- Add to Cart -->
+      <div class="add-to-cart-section">
+        <div class="quantity-selector">
+          <button class="quantity-btn quantity-btn--minus" data-quantity-minus aria-label="Decrease quantity">−</button>
+          <input type="number" class="quantity-input" value="1" min="1" max="10" data-quantity-input>
+          <button class="quantity-btn quantity-btn--plus" data-quantity-plus aria-label="Increase quantity">+</button>
+        </div>
+        
+        <button class="add-to-cart-btn" data-add-to-cart disabled>
+          <span class="add-to-cart-btn__text">Select Required Options</span>
+          <span class="add-to-cart-btn__price" data-cart-button-price>$8.00</span>
+        </button>
+      </div>
+
+      <!-- Hidden form for submission -->
+      <form class="product-form" data-product-form style="display: none;">
+        {% render 'wtf-line-item-properties', mode: 'write' %}
+        <input type="hidden" name="id" data-variant-id value="">
+        <input type="hidden" name="quantity" data-quantity value="1">
+      </form>
+
+      <!-- Notices -->
+      <div class="notice" data-notice></div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Order Builder Styles - Mobile First */
+  .wtf-order-builder {
+    padding: 20px 0;
+    min-height: 100vh;
+    background: #f8f9fa;
+  }
+  
+  .order-builder__container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 15px;
+  }
+  
+  .order-builder__title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #212529;
+  }
+  
+  /* Category Tabs */
+  .category-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 5px;
+  }
+  
+  .category-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 16px;
+    background: white;
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  
+  .category-tab:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  
+  .category-tab--active {
+    background: {{ settings.color_primary | default: '#ff6600' }};
+    border-color: {{ settings.color_primary | default: '#ff6600' }};
+    color: white;
+  }
+  
+  .category-tab__icon {
+    font-size: 24px;
+    margin-bottom: 4px;
+  }
+  
+  .category-tab__label {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  
+  /* Modifier Sections */
+  .modifier-section {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  
+  .modifier-section__title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #212529;
+  }
+  
+  .modifier-section__number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: {{ settings.color_primary | default: '#ff6600' }};
+    color: white;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  
+  .modifier-section__required {
+    font-size: 12px;
+    color: #dc3545;
+    font-weight: normal;
+    margin-left: auto;
+  }
+  
+  .modifier-section__optional {
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: normal;
+    margin-left: auto;
+  }
+  
+  /* Chips Grid */
+  .chips-grid {
+    display: grid;
+    gap: 10px;
+  }
+  
+  .chips-grid--sizes {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+  
+  .chips-grid--strains,
+  .chips-grid--sweetener,
+  .chips-grid--creamer,
+  .chips-grid--ice {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
+  
+  .chips-grid--flavors {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+  
+  .chips-grid--concentration {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+  
+  /* Chip Styles */
+  .chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 8px;
+    background: white;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    text-align: center;
+  }
+  
+  .chip:hover {
+    border-color: {{ settings.color_primary | default: '#ff6600' }};
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  
+  .chip--selected {
+    background: {{ settings.color_primary | default: '#ff6600' }};
+    border-color: {{ settings.color_primary | default: '#ff6600' }};
+    color: white;
+  }
+  
+  .chip__label {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  
+  .chip__detail {
+    font-size: 11px;
+    opacity: 0.8;
+  }
+  
+  .chip__price {
+    font-size: 12px;
+    font-weight: bold;
+    margin-top: 4px;
+    color: {{ settings.color_success | default: '#28a745' }};
+  }
+  
+  .chip--selected .chip__price {
+    color: white;
+  }
+  
+  .chip--gallon {
+    grid-column: span 2;
+    background: linear-gradient(135deg, #ff6600, #ff8533);
+    color: white;
+    border-color: #ff6600;
+  }
+  
+  /* Flavor Search */
+  .flavor-search {
+    margin-bottom: 15px;
+  }
+  
+  .flavor-search__input {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  
+  .flavor-search__input:focus {
+    outline: none;
+    border-color: {{ settings.color_primary | default: '#ff6600' }};
+    box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1);
+  }
+  
+  /* Flavor Counter */
+  .flavor-counter {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  
+  .flavor-counter__text {
+    font-weight: 600;
+  }
+  
+  .flavor-counter__limit {
+    color: #6c757d;
+  }
+  
+  /* Instructions */
+  .instructions-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 14px;
+    resize: vertical;
+    font-family: inherit;
+  }
+  
+  .instructions-input:focus {
+    outline: none;
+    border-color: {{ settings.color_primary | default: '#ff6600' }};
+    box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1);
+  }
+  
+  /* Price Summary */
+  .price-summary {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  
+  .price-summary__breakdown {
+    padding-bottom: 15px;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 15px;
+  }
+  
+  .price-line {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #6c757d;
+  }
+  
+  .price-summary__total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 20px;
+    font-weight: bold;
+    color: #212529;
+  }
+  
+  /* Add to Cart Section */
+  .add-to-cart-section {
+    display: flex;
+    gap: 15px;
+    position: sticky;
+    bottom: 0;
+    background: white;
+    padding: 20px;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+    z-index: 10;
+  }
+  
+  .quantity-selector {
+    display: flex;
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .quantity-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: bold;
+    color: #495057;
+    transition: background 0.2s;
+  }
+  
+  .quantity-btn:hover {
+    background: rgba(0,0,0,0.05);
+  }
+  
+  .quantity-input {
+    width: 50px;
+    text-align: center;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  
+  .add-to-cart-btn {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: {{ settings.color_primary | default: '#ff6600' }};
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .add-to-cart-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3);
+  }
+  
+  .add-to-cart-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  
+  .add-to-cart-btn__price {
+    font-size: 18px;
+  }
+  
+  /* Upsell Banner */
+  .upsell-banner {
+    margin-top: 10px;
+    padding: 0;
+    overflow: hidden;
+    max-height: 0;
+    transition: all 0.3s ease;
+  }
+  
+  .upsell-banner--visible {
+    max-height: 100px;
+    padding: 12px;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    border-radius: 8px;
+    margin-top: 10px;
+  }
+  
+  .upsell-banner__content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+  }
+  
+  .upsell-banner__text {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  
+  .upsell-banner__button {
+    padding: 6px 12px;
+    background: white;
+    color: #28a745;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  /* Notice */
+  .notice {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 0;
+    background: #333;
+    color: white;
+    border-radius: 8px;
+    font-size: 14px;
+    transform: translateX(400px);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+    max-width: 300px;
+  }
+  
+  .notice--visible {
+    transform: translateX(0);
+    padding: 12px 20px;
+  }
+  
+  /* Responsive */
+  @media (min-width: 768px) {
+    .order-builder__container {
+      padding: 0 30px;
+    }
+    
+    .order-builder__title {
+      font-size: 32px;
+      margin-bottom: 30px;
+    }
+    
+    .category-tabs {
+      justify-content: center;
+    }
+    
+    .chips-grid--flavors {
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+    
+    .add-to-cart-section {
+      position: static;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+  }
+  
+  /* Loading State */
+  .chip--loading {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+  
+  /* Accessibility */
+  .chip:focus-visible {
+    outline: 3px solid {{ settings.color_primary | default: '#ff6600' }};
+    outline-offset: 2px;
+  }
+  
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>
+
+<script>
+  // Order Builder Controller
+  document.addEventListener('DOMContentLoaded', function() {
+    const orderBuilder = {
+      currentCategory: 'kava',
+      selectedOptions: {
+        size: 'medium',
+        strain: null,
+        flavors: [],
+        concentration: 'regular',
+        sweetener: 'none',
+        creamer: 'none',
+        ice: 'regular',
+        boosters: [],
+        instructions: ''
+      },
+      basePrice: 8,
+      
+      init() {
+        this.bindEvents();
+        this.updateDisplay();
+        this.validateForm();
+      },
+      
+      bindEvents() {
+        // Category tabs
+        document.querySelectorAll('[data-category]').forEach(tab => {
+          tab.addEventListener('click', (e) => this.selectCategory(e.target.dataset.category));
+        });
+        
+        // Size chips
+        document.querySelectorAll('[data-size-option]').forEach(chip => {
+          chip.addEventListener('click', (e) => {
+            this.selectSingleChip(e.target, 'size', e.target.dataset.sizeOption);
+          });
+        });
+        
+        // Strain chips
+        document.querySelectorAll('[data-strain-option]').forEach(chip => {
+          chip.addEventListener('click', (e) => {
+            this.selectSingleChip(e.target, 'strain', e.target.dataset.strainOption);
+          });
+        });
+        
+        // Flavor chips (multiple)
+        document.querySelectorAll('[data-flavor-option]').forEach(chip => {
+          chip.addEventListener('click', (e) => this.toggleFlavor(e.target));
+        });
+        
+        // Sweetener chips
+        document.querySelectorAll('[data-sweetener-option]').forEach(chip => {
+          chip.addEventListener('click', (e) => {
+            this.selectSingleChip(e.target, 'sweetener', e.target.dataset.sweetenerOption);
+          });
+        });
+        
+        // Creamer chips
+        document.querySelectorAll('[data-creamer-option]').forEach(chip => {
+          chip.addEventListener('click', (e) => {
+            this.selectSingleChip(e.target, 'creamer', e.target.dataset.creamerOption);
+          });
+        });
+        
+        // Ice chips
+        document.querySelectorAll('[data-ice-option]').forEach(chip => {
+          chip.addEventListener('click', (e) => {
+            this.selectSingleChip(e.target, 'ice', e.target.dataset.iceOption);
+          });
+        });
+        
+        // Concentration chips
+        document.querySelectorAll('[data-concentration]').forEach(chip => {
+          chip.addEventListener('click', (e) => {
+            this.selectSingleChip(e.target, 'concentration', e.target.dataset.concentration);
+          });
+        });
+        
+        // Instructions
+        const instructionsInput = document.querySelector('[data-instructions]');
+        if (instructionsInput) {
+          instructionsInput.addEventListener('input', (e) => {
+            this.selectedOptions.instructions = e.target.value;
+            this.updateLineItemProperties();
+          });
+        }
+        
+        // Quantity
+        document.querySelector('[data-quantity-minus]')?.addEventListener('click', () => this.changeQuantity(-1));
+        document.querySelector('[data-quantity-plus]')?.addEventListener('click', () => this.changeQuantity(1));
+        
+        // Add to cart
+        document.querySelector('[data-add-to-cart]')?.addEventListener('click', () => this.addToCart());
+        
+        // Flavor search
+        const flavorSearch = document.querySelector('[data-flavor-search]');
+        if (flavorSearch) {
+          flavorSearch.addEventListener('input', (e) => this.filterFlavors(e.target.value));
+        }
+      },
+      
+      selectCategory(category) {
+        this.currentCategory = category;
+        
+        // Update tabs
+        document.querySelectorAll('[data-category]').forEach(tab => {
+          tab.classList.toggle('category-tab--active', tab.dataset.category === category);
+          tab.setAttribute('aria-selected', tab.dataset.category === category);
+        });
+        
+        // Update product selector
+        const productSelect = document.querySelector('[data-product-select]');
+        if (productSelect) {
+          const option = productSelect.querySelector(`[data-category="${category}"]`);
+          if (option) {
+            productSelect.value = option.value;
+            this.basePrice = parseFloat(option.dataset.price) || 8;
+          }
+        }
+        
+        // Show/hide relevant sections
+        this.updateSectionVisibility();
+        this.updateDisplay();
+      },
+      
+      updateSectionVisibility() {
+        const strainSection = document.querySelector('[data-modifier-section="strain"]');
+        const creamerSection = document.querySelector('[data-creamer-group]');
+        const concentrationSection = document.querySelector('[data-concentration-group]');
+        
+        // Show strain for kratom only
+        if (strainSection) {
+          strainSection.style.display = this.currentCategory === 'kratom' ? 'block' : 'none';
+        }
+        
+        // Show creamer for kava only
+        if (creamerSection) {
+          creamerSection.style.display = this.currentCategory === 'kava' ? 'block' : 'none';
+        }
+        
+        // Show concentration for delta9 gallon only
+        if (concentrationSection) {
+          concentrationSection.style.display = 
+            (this.currentCategory === 'delta9' && this.selectedOptions.size === 'gallon') ? 'block' : 'none';
+        }
+      },
+      
+      selectSingleChip(chip, type, value) {
+        // Clear previous selection
+        chip.closest('.chips-grid').querySelectorAll('.chip').forEach(c => {
+          c.classList.remove('chip--selected');
+          c.setAttribute('aria-pressed', 'false');
+        });
+        
+        // Select new chip
+        chip.classList.add('chip--selected');
+        chip.setAttribute('aria-pressed', 'true');
+        
+        // Update selection
+        this.selectedOptions[type] = value;
+        
+        // Special handling for size changes
+        if (type === 'size') {
+          this.handleSizeChange(value);
+        }
+        
+        this.updateDisplay();
+        this.validateForm();
+        this.updateLineItemProperties();
+      },
+      
+      toggleFlavor(chip) {
+        const flavor = chip.dataset.flavorOption;
+        const isSelected = chip.classList.contains('chip--selected');
+        
+        if (isSelected) {
+          // Remove flavor
+          chip.classList.remove('chip--selected');
+          chip.setAttribute('aria-pressed', 'false');
+          this.selectedOptions.flavors = this.selectedOptions.flavors.filter(f => f !== flavor);
+        } else {
+          // Add flavor (max 3)
+          if (this.selectedOptions.flavors.length >= 3) {
+            this.showNotice('Maximum 3 flavors allowed');
+            return;
+          }
+          chip.classList.add('chip--selected');
+          chip.setAttribute('aria-pressed', 'true');
+          this.selectedOptions.flavors.push(flavor);
+        }
+        
+        this.updateFlavorCounter();
+        this.updateLineItemProperties();
+      },
+      
+      updateFlavorCounter() {
+        const counter = document.querySelector('[data-flavor-counter]');
+        if (counter) {
+          const text = counter.querySelector('.flavor-counter__text');
+          if (text) {
+            const count = this.selectedOptions.flavors.length;
+            text.textContent = `${count} flavor${count !== 1 ? 's' : ''} selected`;
+          }
+        }
+      },
+      
+      handleSizeChange(size) {
+        // Update section visibility for gallon
+        this.updateSectionVisibility();
+        
+        // Handle gallon-specific rules
+        if (size === 'gallon') {
+          const productType = document.querySelector('[data-product-select] option:checked')?.dataset.productType;
+          if (productType === 'kava' || productType === 'kratom') {
+            // Hide flavors for kava/kratom gallons
+            const flavorSection = document.querySelector('[data-modifier-section="flavors"]');
+            if (flavorSection) {
+              flavorSection.style.display = 'none';
+            }
+          }
+        } else {
+          // Show flavors for non-gallon sizes
+          const flavorSection = document.querySelector('[data-modifier-section="flavors"]');
+          if (flavorSection) {
+            flavorSection.style.display = 'block';
+          }
+        }
+        
+        // Dispatch size change event for other modules
+        document.dispatchEvent(new CustomEvent('wtf:size-changed', {
+          detail: { size, sizeData: { price: this.getSizePriceDelta(size) } }
+        }));
+      },
+      
+      getSizePriceDelta(size) {
+        const deltas = {
+          small: 0,
+          medium: 1,
+          large: 2,
+          gallon: 35
+        };
+        return deltas[size] || 0;
+      },
+      
+      filterFlavors(searchTerm) {
+        const term = searchTerm.toLowerCase();
+        document.querySelectorAll('[data-flavor-option]').forEach(chip => {
+          const label = chip.querySelector('.chip__label').textContent.toLowerCase();
+          chip.style.display = label.includes(term) ? '' : 'none';
+        });
+      },
+      
+      changeQuantity(delta) {
+        const input = document.querySelector('[data-quantity-input]');
+        if (input) {
+          const current = parseInt(input.value) || 1;
+          const newValue = Math.max(1, Math.min(10, current + delta));
+          input.value = newValue;
+          document.querySelector('[data-quantity]').value = newValue;
+          this.updateDisplay();
+        }
+      },
+      
+      updateDisplay() {
+        const sizeDelta = this.getSizePriceDelta(this.selectedOptions.size);
+        const boosterTotal = this.selectedOptions.boosters.reduce((sum, b) => sum + (b.price || 0), 0);
+        const concentrationDelta = this.selectedOptions.concentration === 'strong' ? 10 : 
+                                   this.selectedOptions.concentration === 'extra' ? 20 : 0;
+        
+        const subtotal = this.basePrice + sizeDelta + boosterTotal + concentrationDelta;
+        const quantity = parseInt(document.querySelector('[data-quantity-input]')?.value) || 1;
+        const total = subtotal * quantity;
+        
+        // Update price breakdown
+        document.querySelector('[data-base-price]').textContent = `$${this.basePrice.toFixed(2)}`;
+        
+        const sizeUpcharge = document.querySelector('[data-size-upcharge]');
+        if (sizeDelta > 0) {
+          sizeUpcharge.style.display = 'flex';
+          document.querySelector('[data-size-price]').textContent = `+$${sizeDelta.toFixed(2)}`;
+        } else {
+          sizeUpcharge.style.display = 'none';
+        }
+        
+        const boostersUpcharge = document.querySelector('[data-boosters-upcharge]');
+        if (boosterTotal > 0) {
+          boostersUpcharge.style.display = 'flex';
+          document.querySelector('[data-boosters-price]').textContent = `+$${boosterTotal.toFixed(2)}`;
+        } else {
+          boostersUpcharge.style.display = 'none';
+        }
+        
+        // Update totals
+        document.querySelector('[data-total-price]').textContent = `$${total.toFixed(2)}`;
+        document.querySelector('[data-cart-button-price]').textContent = `$${total.toFixed(2)}`;
+      },
+      
+      validateForm() {
+        let isValid = true;
+        const errors = [];
+        
+        // Check required fields based on category
+        if (this.currentCategory === 'kratom' && !this.selectedOptions.strain) {
+          isValid = false;
+          errors.push('strain');
+        }
+        
+        if (this.currentCategory === 'delta9' && this.selectedOptions.size === 'gallon' && !this.selectedOptions.concentration) {
+          isValid = false;
+          errors.push('concentration');
+        }
+        
+        // Update button state
+        const addButton = document.querySelector('[data-add-to-cart]');
+        if (addButton) {
+          addButton.disabled = !isValid;
+          const buttonText = addButton.querySelector('.add-to-cart-btn__text');
+          if (buttonText) {
+            buttonText.textContent = isValid ? 'Add to Cart' : `Select ${errors.join(', ')}`;
+          }
+        }
+        
+        return isValid;
+      },
+      
+      updateLineItemProperties() {
+        // Update hidden form fields
+        if (window.WTFLineItemProperties) {
+          WTFLineItemProperties.update('size', this.capitalizeFirst(this.selectedOptions.size));
+          WTFLineItemProperties.update('strain', this.capitalizeFirst(this.selectedOptions.strain));
+          WTFLineItemProperties.update('flavor', this.selectedOptions.flavors.map(f => this.capitalizeFirst(f)).join(', '));
+          WTFLineItemProperties.update('sweetener', this.capitalizeFirst(this.selectedOptions.sweetener));
+          WTFLineItemProperties.update('creamer', this.capitalizeFirst(this.selectedOptions.creamer));
+          WTFLineItemProperties.update('ice', this.capitalizeFirst(this.selectedOptions.ice));
+          WTFLineItemProperties.update('boosters', this.selectedOptions.boosters);
+          WTFLineItemProperties.update('instructions', this.selectedOptions.instructions);
+          WTFLineItemProperties.update('size-upcharge', this.getSizePriceDelta(this.selectedOptions.size));
+        }
+      },
+      
+      capitalizeFirst(str) {
+        if (!str) return '';
+        return str.charAt(0).toUpperCase() + str.slice(1).replace('-', ' ');
+      },
+      
+      async addToCart() {
+        if (!this.validateForm()) return;
+        
+        const button = document.querySelector('[data-add-to-cart]');
+        button.disabled = true;
+        button.querySelector('.add-to-cart-btn__text').textContent = 'Adding...';
+        
+        // Get form data
+        const form = document.querySelector('[data-product-form]');
+        const formData = new FormData(form);
+        
+        try {
+          const response = await fetch('/cart/add.js', {
+            method: 'POST',
+            body: formData
+          });
+          
+          if (response.ok) {
+            const item = await response.json();
+            
+            // Dispatch cart added event
+            document.dispatchEvent(new CustomEvent('cart:added', {
+              detail: { item, cart: null }
+            }));
+            
+            // Show success
+            this.showNotice('Added to cart!');
+            
+            // Reset form
+            setTimeout(() => {
+              this.resetForm();
+            }, 1000);
+          } else {
+            throw new Error('Failed to add to cart');
+          }
+        } catch (error) {
+          console.error('Cart error:', error);
+          this.showNotice('Error adding to cart. Please try again.');
+        } finally {
+          button.disabled = false;
+          button.querySelector('.add-to-cart-btn__text').textContent = 'Add to Cart';
+          this.validateForm();
+        }
+      },
+      
+      resetForm() {
+        // Reset to defaults
+        this.selectedOptions = {
+          size: 'medium',
+          strain: null,
+          flavors: [],
+          concentration: 'regular',
+          sweetener: 'none',
+          creamer: 'none',
+          ice: 'regular',
+          boosters: [],
+          instructions: ''
+        };
+        
+        // Reset UI
+        document.querySelectorAll('.chip--selected').forEach(chip => {
+          if (!chip.matches('[data-size-option="medium"], [data-ice-option="regular"], [data-sweetener-option="none"], [data-creamer-option="none"]')) {
+            chip.classList.remove('chip--selected');
+            chip.setAttribute('aria-pressed', 'false');
+          }
+        });
+        
+        document.querySelector('[data-instructions]').value = '';
+        document.querySelector('[data-quantity-input]').value = 1;
+        
+        this.updateFlavorCounter();
+        this.updateDisplay();
+        this.validateForm();
+      },
+      
+      showNotice(message) {
+        const notice = document.querySelector('[data-notice]');
+        if (notice) {
+          notice.textContent = message;
+          notice.classList.add('notice--visible');
+          
+          setTimeout(() => {
+            notice.classList.remove('notice--visible');
+          }, 3000);
+        }
+      }
+    };
+    
+    orderBuilder.init();
+  });
+</script>
+
+{% schema %}
+{
+  "name": "Order Builder",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section Title",
+      "default": "Build Your Drink"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_drafts",
+      "label": "Show Draft Pours",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_boosters",
+      "label": "Enable Power Boosters",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "Order Builder"
+    }
+  ]
+}
+{% endschema %}
