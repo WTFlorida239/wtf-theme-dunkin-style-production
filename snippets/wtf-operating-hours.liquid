@@ -1,0 +1,250 @@
+{% comment %}
+  Snippet: wtf-operating-hours.liquid
+  Displays consistent operating hours across the site
+  Usage: {% render 'wtf-operating-hours', format: 'inline' %}
+  Formats: 'inline', 'full', 'compact'
+{% endcomment %}
+
+{%- liquid
+  assign format = format | default: 'inline'
+  assign current_day = 'now' | date: '%A'
+  assign current_hour = 'now' | date: '%H' | plus: 0
+  assign is_open = false
+  
+  # Store hours configuration (later can be pulled from metafields/GBP)
+  assign sunday_open = '8:00 AM'
+  assign sunday_close = '8:00 PM'
+  assign weekday_open = '8:00 AM'
+  assign weekday_close = '8:00 PM'
+  assign weekend_open = '8:00 AM'
+  assign weekend_close = '10:00 PM'
+  
+  # Determine if currently open
+  case current_day
+    when 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'
+      if current_hour >= 8 and current_hour < 20
+        assign is_open = true
+      endif
+    when 'Friday', 'Saturday'
+      if current_hour >= 8 and current_hour < 22
+        assign is_open = true
+      endif
+  endcase
+-%}
+
+{%- case format -%}
+  {%- when 'inline' -%}
+    <span class="wtf-hours wtf-hours--inline">
+      <span class="wtf-hours__status wtf-hours__status--{{ is_open | replace: true, 'open' | replace: false, 'closed' }}">
+        {%- if is_open -%}
+          <span class="wtf-hours__icon">🟢</span> Open Now
+        {%- else -%}
+          <span class="wtf-hours__icon">🔴</span> Closed
+        {%- endif -%}
+      </span>
+      <span class="wtf-hours__today">
+        • Today: 
+        {%- case current_day -%}
+          {%- when 'Friday', 'Saturday' -%}
+            {{ weekend_open }} - {{ weekend_close }}
+          {%- else -%}
+            {{ weekday_open }} - {{ weekday_close }}
+        {%- endcase -%}
+      </span>
+    </span>
+
+  {%- when 'full' -%}
+    <div class="wtf-hours wtf-hours--full">
+      <div class="wtf-hours__header">
+        <h3 class="wtf-hours__title">Store Hours</h3>
+        <span class="wtf-hours__status wtf-hours__status--{{ is_open | replace: true, 'open' | replace: false, 'closed' }}">
+          {%- if is_open -%}
+            <span class="wtf-hours__icon">🟢</span> Open Now
+          {%- else -%}
+            <span class="wtf-hours__icon">🔴</span> Closed
+          {%- endif -%}
+        </span>
+      </div>
+      <ul class="wtf-hours__list">
+        <li class="wtf-hours__day {% if current_day == 'Sunday' %}wtf-hours__day--current{% endif %}">
+          <span class="wtf-hours__day-name">Sunday</span>
+          <span class="wtf-hours__day-time">{{ sunday_open }} - {{ sunday_close }}</span>
+        </li>
+        <li class="wtf-hours__day {% if current_day == 'Monday' %}wtf-hours__day--current{% endif %}">
+          <span class="wtf-hours__day-name">Monday</span>
+          <span class="wtf-hours__day-time">{{ weekday_open }} - {{ weekday_close }}</span>
+        </li>
+        <li class="wtf-hours__day {% if current_day == 'Tuesday' %}wtf-hours__day--current{% endif %}">
+          <span class="wtf-hours__day-name">Tuesday</span>
+          <span class="wtf-hours__day-time">{{ weekday_open }} - {{ weekday_close }}</span>
+        </li>
+        <li class="wtf-hours__day {% if current_day == 'Wednesday' %}wtf-hours__day--current{% endif %}">
+          <span class="wtf-hours__day-name">Wednesday</span>
+          <span class="wtf-hours__day-time">{{ weekday_open }} - {{ weekday_close }}</span>
+        </li>
+        <li class="wtf-hours__day {% if current_day == 'Thursday' %}wtf-hours__day--current{% endif %}">
+          <span class="wtf-hours__day-name">Thursday</span>
+          <span class="wtf-hours__day-time">{{ weekday_open }} - {{ weekday_close }}</span>
+        </li>
+        <li class="wtf-hours__day {% if current_day == 'Friday' %}wtf-hours__day--current{% endif %}">
+          <span class="wtf-hours__day-name">Friday</span>
+          <span class="wtf-hours__day-time">{{ weekend_open }} - {{ weekend_close }}</span>
+        </li>
+        <li class="wtf-hours__day {% if current_day == 'Saturday' %}wtf-hours__day--current{% endif %}">
+          <span class="wtf-hours__day-name">Saturday</span>
+          <span class="wtf-hours__day-time">{{ weekend_open }} - {{ weekend_close }}</span>
+        </li>
+      </ul>
+    </div>
+
+  {%- when 'compact' -%}
+    <div class="wtf-hours wtf-hours--compact">
+      <div class="wtf-hours__summary">
+        <strong>Hours:</strong> Sun-Thu {{ weekday_open }}-{{ weekday_close }} • Fri-Sat {{ weekend_open }}-{{ weekend_close }}
+      </div>
+      {%- if is_open -%}
+        <div class="wtf-hours__badge wtf-hours__badge--open">Open</div>
+      {%- else -%}
+        <div class="wtf-hours__badge wtf-hours__badge--closed">Closed</div>
+      {%- endif -%}
+    </div>
+{%- endcase -%}
+
+<style>
+  /* Operating Hours Styles */
+  .wtf-hours {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  /* Inline format */
+  .wtf-hours--inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .wtf-hours__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+  }
+  
+  .wtf-hours__status--open {
+    color: #28a745;
+  }
+  
+  .wtf-hours__status--closed {
+    color: #dc3545;
+  }
+  
+  .wtf-hours__icon {
+    font-size: 10px;
+  }
+  
+  .wtf-hours__today {
+    color: #666;
+  }
+  
+  /* Full format */
+  .wtf-hours--full {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 16px;
+    max-width: 320px;
+  }
+  
+  .wtf-hours__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  .wtf-hours__title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  
+  .wtf-hours__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .wtf-hours__day {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+  }
+  
+  .wtf-hours__day:last-child {
+    border-bottom: none;
+  }
+  
+  .wtf-hours__day--current {
+    background: white;
+    margin: 0 -8px;
+    padding-left: 8px;
+    padding-right: 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  
+  .wtf-hours__day-name {
+    color: #495057;
+  }
+  
+  .wtf-hours__day-time {
+    color: #212529;
+  }
+  
+  /* Compact format */
+  .wtf-hours--compact {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .wtf-hours__summary {
+    font-size: 13px;
+    color: #666;
+  }
+  
+  .wtf-hours__badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .wtf-hours__badge--open {
+    background: #d4edda;
+    color: #155724;
+  }
+  
+  .wtf-hours__badge--closed {
+    background: #f8d7da;
+    color: #721c24;
+  }
+  
+  @media (max-width: 768px) {
+    .wtf-hours--inline {
+      font-size: 12px;
+    }
+    
+    .wtf-hours__today {
+      display: block;
+      width: 100%;
+    }
+  }
+</style>
