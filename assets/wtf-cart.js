@@ -143,8 +143,9 @@
           detail: { line, cart, item: line } 
         }));
         
-        document.dispatchEvent(new CustomEvent('wtf:cart:updated', { 
-          detail: { cart } 
+        // Standard WTF cart update event (consumed by drawers, badges, etc.)
+        document.dispatchEvent(new CustomEvent('wtf:cart:update', { 
+          detail: { cart, last_added: line }
         }));
         
         await WTFCart.refreshBadge(cart);
@@ -317,6 +318,14 @@
 
   // Expose globally
   window.WTFCart = WTFCart;
+  
+  // Back-compat shim for older code expecting WTF.addToCart
+  window.WTF = window.WTF || {};
+  if (typeof window.WTF.addToCart !== 'function') {
+    window.WTF.addToCart = function({ id, quantity = 1, properties = {}, selling_plan = null }) {
+      return WTFCart.add({ id, quantity, properties, selling_plan });
+    };
+  }
 
   // Auto-initialize on DOM ready
   if (document.readyState === 'loading') {
