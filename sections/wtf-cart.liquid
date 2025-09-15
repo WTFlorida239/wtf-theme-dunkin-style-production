@@ -75,7 +75,7 @@
                 {% endif %}
 
                 {% comment %} Line Item Properties (strain, flavors, etc.) {% endcomment %}
-                {% if item.properties.size > 0 %}
+                {% if item.properties != empty %}
                   <div class="wtf-line__properties">
                     {% for p in item.properties %}
                       {% unless p.last == blank %}

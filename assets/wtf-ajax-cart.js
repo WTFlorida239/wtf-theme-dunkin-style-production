@@ -46,11 +46,16 @@
     const cart = await getCart();
     setCartCount(cart.item_count);
 
-    // Notify the theme (drawer can listen for this)
-    const evt = new CustomEvent("wtf:cart:update", {
-      detail: { cart, last_added: item },
-    });
-    document.dispatchEvent(evt);
+    // Notify the theme (drawer, badges, etc.)
+    const detail = { cart, last_added: item };
+    document.dispatchEvent(new CustomEvent("wtf:cart:update", { detail }));
+    // Back-compat generic events used by other components
+    document.dispatchEvent(new CustomEvent("cart:updated", { detail: cart }));
+    document.dispatchEvent(new CustomEvent("cart:added", { detail: { item, cart } }));
+    // Open drawer if available
+    try { if (window.WTF_CART && typeof window.WTF_CART.open === 'function') window.WTF_CART.open(); } catch(e) {}
+    // Legacy signal some projects used
+    document.dispatchEvent(new CustomEvent("wtf:cart:open"));
   }
 
   function attach() {

@@ -823,6 +823,34 @@
 <script>
   // Order Builder Controller
   document.addEventListener('DOMContentLoaded', function() {
+    // Variant ID map sourced from section settings (configure in theme editor)
+    const variantMap = {
+      kava: {
+        small: '{{ section.settings.kava_small_variant | default: '' }}',
+        medium: '{{ section.settings.kava_medium_variant | default: '' }}',
+        large: '{{ section.settings.kava_large_variant | default: '' }}',
+        gallon: '{{ section.settings.kava_gallon_variant | default: '' }}'
+      },
+      kratom: {
+        small: '{{ section.settings.kratom_small_variant | default: '' }}',
+        medium: '{{ section.settings.kratom_medium_variant | default: '' }}',
+        large: '{{ section.settings.kratom_large_variant | default: '' }}',
+        gallon: '{{ section.settings.kratom_gallon_variant | default: '' }}'
+      },
+      delta9: {
+        small: '{{ section.settings.delta9_small_variant | default: '' }}',
+        medium: '{{ section.settings.delta9_medium_variant | default: '' }}',
+        large: '{{ section.settings.delta9_large_variant | default: '' }}',
+        gallon: '{{ section.settings.delta9_gallon_variant | default: '' }}'
+      },
+      drafts: {
+        small: '{{ section.settings.drafts_small_variant | default: '' }}',
+        medium: '{{ section.settings.drafts_medium_variant | default: '' }}',
+        large: '{{ section.settings.drafts_large_variant | default: '' }}',
+        gallon: '{{ section.settings.drafts_gallon_variant | default: '' }}'
+      }
+    };
+
     const orderBuilder = {
       currentCategory: 'kava',
       selectedOptions: {
@@ -848,6 +876,14 @@
         // Category tabs
         document.querySelectorAll('[data-category]').forEach(tab => {
           tab.addEventListener('click', (e) => this.selectCategory(e.target.dataset.category));
+        });
+
+        // Listen for upsell changes to capture boosters and adjust price
+        document.addEventListener('wtf:upsell-changed', (e) => {
+          const d = e.detail || {};
+          this.selectedOptions.boosters = Array.isArray(d.boosters) ? d.boosters : [];
+          this.updateDisplay();
+          this.updateLineItemProperties();
         });
         
         // Size chips
@@ -938,6 +974,9 @@
             this.basePrice = parseFloat(option.dataset.price) || 8;
           }
         }
+
+        // Update variant id whenever category changes
+        this.updateVariantId();
         
         // Show/hide relevant sections
         this.updateSectionVisibility();
@@ -983,6 +1022,7 @@
         // Special handling for size changes
         if (type === 'size') {
           this.handleSizeChange(value);
+          this.updateVariantId();
         }
         
         this.updateDisplay();
@@ -1116,6 +1156,15 @@
         document.querySelector('[data-cart-button-price]').textContent = `$${total.toFixed(2)}`;
       },
       
+      updateVariantId() {
+        const idInput = document.querySelector('[data-variant-id]');
+        if (!idInput) return;
+        const cat = this.currentCategory;
+        const size = this.selectedOptions.size;
+        const id = variantMap[cat] && variantMap[cat][size] ? String(variantMap[cat][size]).trim() : '';
+        idInput.value = id;
+      },
+      
       validateForm() {
         let isValid = true;
         const errors = [];
@@ -1129,6 +1178,13 @@
         if (this.currentCategory === 'delta9' && this.selectedOptions.size === 'gallon' && !this.selectedOptions.concentration) {
           isValid = false;
           errors.push('concentration');
+        }
+        
+        // Require a valid variant id
+        const idInput = document.querySelector('[data-variant-id]');
+        if (!idInput || !idInput.value) {
+          isValid = false;
+          if (!errors.includes('variant')) errors.push('variant');
         }
         
         // Update button state
@@ -1171,6 +1227,13 @@
         button.disabled = true;
         button.querySelector('.add-to-cart-btn__text').textContent = 'Adding...';
         
+        // Ensure variant id present
+        this.updateVariantId();
+        const idInput = document.querySelector('[data-variant-id]');
+        if (!idInput || !idInput.value) {
+          throw new Error('Missing variantId');
+        }
+        
         // Get form data
         const form = document.querySelector('[data-product-form]');
         const formData = new FormData(form);
@@ -1184,10 +1247,13 @@
           if (response.ok) {
             const item = await response.json();
             
-            // Dispatch cart added event
-            document.dispatchEvent(new CustomEvent('cart:added', {
-              detail: { item, cart: null }
-            }));
+            // Fetch latest cart and dispatch standard WTF event
+            const cartRes = await fetch('/cart.js');
+            const cart = await cartRes.json();
+            document.dispatchEvent(new CustomEvent('wtf:cart:update', { detail: { cart, last_added: item } }));
+            
+            // Also emit generic event for drawers expecting it
+            document.dispatchEvent(new CustomEvent('cart:added', { detail: { item, cart } }));
             
             // Show success
             this.showNotice('Added to cart!');
@@ -1277,7 +1343,24 @@
       "id": "enable_boosters",
       "label": "Enable Power Boosters",
       "default": true
-    }
+    },
+    {"type":"header","content":"Variant IDs (numeric)"},
+    {"type":"text","id":"kava_small_variant","label":"Kava – Small variantId"},
+    {"type":"text","id":"kava_medium_variant","label":"Kava – Medium variantId"},
+    {"type":"text","id":"kava_large_variant","label":"Kava – Large variantId"},
+    {"type":"text","id":"kava_gallon_variant","label":"Kava – Gallon variantId"},
+    {"type":"text","id":"kratom_small_variant","label":"Kratom – Small variantId"},
+    {"type":"text","id":"kratom_medium_variant","label":"Kratom – Medium variantId"},
+    {"type":"text","id":"kratom_large_variant","label":"Kratom – Large variantId"},
+    {"type":"text","id":"kratom_gallon_variant","label":"Kratom – Gallon variantId"},
+    {"type":"text","id":"delta9_small_variant","label":"Δ9 – Small variantId"},
+    {"type":"text","id":"delta9_medium_variant","label":"Δ9 – Medium variantId"},
+    {"type":"text","id":"delta9_large_variant","label":"Δ9 – Large variantId"},
+    {"type":"text","id":"delta9_gallon_variant","label":"Δ9 – Gallon variantId"},
+    {"type":"text","id":"drafts_small_variant","label":"Draft – Small variantId"},
+    {"type":"text","id":"drafts_medium_variant","label":"Draft – Medium variantId"},
+    {"type":"text","id":"drafts_large_variant","label":"Draft – Large variantId"},
+    {"type":"text","id":"drafts_gallon_variant","label":"Draft – Gallon variantId"}
   ],
   "presets": [
     {

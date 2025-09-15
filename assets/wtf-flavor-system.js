@@ -339,7 +339,7 @@
           const count = $('#cart-count');
           if (count) count.textContent = cart.item_count;
           // Open drawer if your drawer listens to this event:
-          document.dispatchEvent(new CustomEvent('wtf:cart:updated', { detail: { cart } }));
+          document.dispatchEvent(new CustomEvent('wtf:cart:update', { detail: { cart } }));
         })
         .catch(() => {});
     }
