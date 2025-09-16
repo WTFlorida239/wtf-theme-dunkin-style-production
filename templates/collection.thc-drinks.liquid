@@ -1,9 +1,11 @@
-{%- comment -%}
-  THC Drinks — Styled list view (homepage card style)
-{%- endcomment -%}
+{% comment %}
+Collection Template — THC Drinks (Homepage card style)
+Renders a responsive card grid using centralized item data.
+{% endcomment %}
+
 {% render 'wtf-drink-data' %}
 {% render 'wtf-collection-cards',
-  title: 'THC Drinks',
+  title: collection.title | default: 'THC Drinks',
   subtitle: 'Premium cannabis beverages - Large size and Gallons only',
   items: WTF_DELTA9_ITEMS,
   color: 'thc',
