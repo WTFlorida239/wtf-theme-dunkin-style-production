@@ -38,6 +38,13 @@
       <!-- Price Adjustments -->
       <input type="hidden" name="properties[_size_upcharge]" value="0" data-property="size-upcharge">
       <input type="hidden" name="properties[_booster_upcharge]" value="0" data-property="booster-upcharge">
+      <input type="hidden" name="properties[_extra_pump_price]" value="0" data-property="extra-pump-price">
+      <input type="hidden" name="properties[_extra_pump_upcharge]" value="0" data-property="extra-pump-upcharge">
+
+      <!-- Pump Accounting -->
+      <input type="hidden" name="properties[Included Pumps]" value="0" data-property="included-pumps">
+      <input type="hidden" name="properties[Pump Count]" value="0" data-property="pump-count">
+      <input type="hidden" name="properties[Extra Pumps]" value="0" data-property="extra-pumps">
       
       <!-- Validation Flag -->
       <input type="hidden" name="properties[_validated]" value="false" data-property="validated">
@@ -64,17 +71,11 @@
         },
         
         handleSizeUpdate: function(size) {
-          // Update size-related properties
-          const sizeUpcharges = {
-            'Small': 0,
-            'Medium': 1,
-            'Large': 2,
-            'Gallon': 35
-          };
-          
+          // Update size-related properties (actual values will be set by section script)
           const upchargeInput = document.querySelector('[data-property="size-upcharge"]');
           if (upchargeInput) {
-            upchargeInput.value = sizeUpcharges[size] || 0;
+            // leave existing value; section JS will overwrite precisely
+            upchargeInput.value = upchargeInput.value || 0;
           }
         },
         

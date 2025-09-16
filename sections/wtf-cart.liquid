@@ -78,7 +78,7 @@
                 {% if item.properties != empty %}
                   <div class="wtf-line__properties">
                     {% for p in item.properties %}
-                      {% unless p.last == blank %}
+                      {% unless p.first contains '_' or p.last == blank or p.last == 'false' %}
                         <div class="wtf-property"><strong>{{ p.first }}:</strong> {{ p.last }}</div>
                       {% endunless %}
                     {% endfor %}
