@@ -9,18 +9,6 @@
     - layout/theme.liquid includes the cart count hydrator and the two assets once.
 {%- endcomment -%}
 
-{%- comment -%}
-  Styled flavor list (homepage card style)
-{%- endcomment -%}
-{% render 'wtf-drink-data' %}
-{% render 'wtf-collection-cards',
-  title: 'Kratom Teas',
-  subtitle: 'Green, Red, White & Yellow strains with premium flavorings',
-  items: WTF_KRATOM_ITEMS,
-  color: 'kratom',
-  back_url: routes.root_url
-%}
-
 {%- assign kratom_handle = page.metafields.wtf.product_handle | default: 'custom-kratom-tea' -%}
 {%- assign product = all_products[kratom_handle] -%}
 
