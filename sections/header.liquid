@@ -1,0 +1,128 @@
+{% comment %}
+  sections/header.liquid
+  WTF header with live cart count.
+{% endcomment %}
+
+<header class="site-header" role="banner">
+  <div class="header-container page-width">
+    <!-- Logo -->
+    <div class="header-logo">
+      <a href="{{ routes.root_url }}" class="header-logo__link">
+        {%- if settings.logo != blank -%}
+          <img
+            src="{{ settings.logo | image_url: width: 240 }}"
+            alt="{{ shop.name | escape }}"
+            class="header-logo__image"
+            width="240"
+            height="{{ 240 | divided_by: settings.logo.aspect_ratio | round }}"
+            loading="eager"
+          >
+        {%- else -%}
+          <span class="h2 header-logo__text">{{ shop.name }}</span>
+        {%- endif -%}
+      </a>
+    </div>
+
+    <!-- Nav -->
+    {%- if section.settings.menu != blank -%}
+      <nav class="header-nav" role="navigation" aria-label="Primary">
+        <ul class="header-nav__list" role="list">
+          {%- for link in section.settings.menu.links -%}
+            <li class="header-nav__item">
+              <a href="{{ link.url }}" class="header-nav__link {% if link.current %}is-active{% endif %}">
+                {{ link.title }}
+              </a>
+            </li>
+          {%- endfor -%}
+        </ul>
+      </nav>
+    {%- endif -%}
+
+    <!-- Actions -->
+    <div class="header-actions">
+      <!-- Operating Hours -->
+      <div class="header-hours">
+        {% render 'wtf-operating-hours', format: 'inline' %}
+      </div>
+      
+      <a href="{{ routes.cart_url }}" class="header-cart-link" aria-label="Cart">
+        <span class="header-cart-link__icon" aria-hidden="true">🛒</span>
+        <span class="header-cart-link__label">Cart</span>
+        <span class="header-cart-link__count-badge" id="cart-count" data-cart-count data-cart-count-target>{{ cart.item_count }}</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    padding: 1rem 2rem;
+    border-bottom: 1px solid rgba(0,0,0,.08);
+    background: var(--color-base-background-1);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .header-container {
+    display:flex; align-items:center; justify-content:space-between;
+    max-width: var(--page-width); margin: 0 auto; gap: 1rem;
+  }
+  .header-logo__image { max-width: 160px; height: auto; display:block; }
+  .header-nav__list { display:flex; gap: 1.25rem; margin:0; padding:0; list-style:none; }
+  .header-nav__link { text-decoration:none; font-weight:600; color: rgb(var(--color-base-text)); }
+  .header-nav__link.is-active { text-decoration: underline; }
+  .header-actions { display:flex; align-items:center; gap: 1.5rem; }
+  .header-hours { 
+    padding-right: 1.5rem; 
+    border-right: 1px solid rgba(0,0,0,0.1);
+  }
+  .header-cart-link { display:inline-flex; align-items:center; gap:.5rem; text-decoration:none; font-weight:700; color: rgb(var(--color-base-text)); }
+  .header-cart-link__count-badge {
+    min-width: 1.75rem; height: 1.5rem; padding: 0 .4rem;
+    display:inline-flex; align-items:center; justify-content:center;
+    background: {{ settings.color_primary | default: '#ff6600' }};
+    color:#fff; border-radius: 999px; font-size:.9rem; line-height:1;
+  }
+  @media (max-width: 750px) {
+    .header-logo__image { max-width: 130px; }
+    .header-nav { display: none; } /* simple example; replace with drawer/mobile menu later */
+    .header-hours { display: none; } /* Hide on mobile to save space */
+  }
+</style>
+
+<script>
+  (function () {
+    // Safe guard if wtf-cart.js hasn't loaded yet
+    function setCount(n) {
+      var el = document.querySelector('[data-cart-count]');
+      if (el) el.textContent = n || 0;
+    }
+
+    // Initialize on DOM ready
+    document.addEventListener('DOMContentLoaded', function () {
+      if (window.WTF && typeof WTF.updateCartCount === 'function') {
+        WTF.updateCartCount(); // will set the badge and fire cart:refreshed
+      } else {
+        // fallback to /cart.js if helper not present yet
+        fetch('{{ routes.cart_url }}.js', { headers: { Accept: 'application/json' } })
+          .then((r) => r.json())
+          .then((c) => setCount(c.item_count))
+          .catch(() => {});
+      }
+    });
+
+    // Live updates after adds/changes
+    document.addEventListener('cart:refreshed', function (e) {
+      setCount(e.detail && e.detail.item_count);
+    });
+    document.addEventListener('cart:added', function (e) {
+      var cart = e.detail && e.detail.cart;
+      if (cart) setCount(cart.item_count);
+    });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Header",
+  "settings": [{ "type": "link_list", "id": "menu", "label": "Menu", "default": "main-menu" }]
+}
+{% endschema %}

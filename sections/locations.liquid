@@ -1,0 +1,560 @@
+{% comment %}
+  Section: locations.liquid
+  Store location with operating hours, directions, and local SEO optimization
+{% endcomment %}
+
+<section class="locations-section" data-section-id="{{ section.id }}">
+  <div class="locations__container">
+    
+    <!-- Main Location Card -->
+    <div class="location-card location-card--primary">
+      <div class="location-card__header">
+        <h2 class="location-card__title">{{ section.settings.location_name | default: 'WTF Kava Bar' }}</h2>
+        <div class="location-card__badge">
+          {% render 'wtf-operating-hours', format: 'compact' %}
+        </div>
+      </div>
+      
+      <div class="location-card__body">
+        <div class="location-info">
+          <!-- Address -->
+          <div class="location-info__item">
+            <svg class="location-info__icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+            </svg>
+            <div class="location-info__content">
+              <h3 class="location-info__label">Address</h3>
+              <address class="location-info__value">
+                {{ section.settings.street_address | default: '123 Main Street' }}<br>
+                {{ section.settings.city | default: 'Fort Lauderdale' }}, {{ section.settings.state | default: 'FL' }} {{ section.settings.zip | default: '33301' }}
+              </address>
+              <a href="https://maps.google.com/?q={{ section.settings.street_address | url_encode }}+{{ section.settings.city | url_encode }}+{{ section.settings.state | url_encode }}+{{ section.settings.zip | url_encode }}" 
+                 class="location-info__link" 
+                 target="_blank" 
+                 rel="noopener">
+                Get Directions
+              </a>
+            </div>
+          </div>
+          
+          <!-- Phone -->
+          <div class="location-info__item">
+            <svg class="location-info__icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+            </svg>
+            <div class="location-info__content">
+              <h3 class="location-info__label">Phone</h3>
+              <a href="tel:{{ section.settings.phone | default: '+15555555555' }}" class="location-info__value location-info__value--link">
+                {{ section.settings.phone_display | default: '(555) 555-5555' }}
+              </a>
+            </div>
+          </div>
+          
+          <!-- Email -->
+          <div class="location-info__item">
+            <svg class="location-info__icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+            </svg>
+            <div class="location-info__content">
+              <h3 class="location-info__label">Email</h3>
+              <a href="mailto:{{ section.settings.email | default: shop.email }}" class="location-info__value location-info__value--link">
+                {{ section.settings.email | default: shop.email }}
+              </a>
+            </div>
+          </div>
+          
+          <!-- Hours -->
+          <div class="location-info__item">
+            <svg class="location-info__icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+            </svg>
+            <div class="location-info__content">
+              <h3 class="location-info__label">Hours</h3>
+              {% render 'wtf-operating-hours', format: 'full' %}
+            </div>
+          </div>
+        </div>
+        
+        <!-- Map -->
+        <div class="location-map" id="location-map">
+          <iframe 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3581.5439973214713!2d{{ section.settings.longitude | default: '-80.1373' }}!3d{{ section.settings.latitude | default: '26.1224' }}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjbCsDA3JzIwLjYiTiA4MMKwMDgnMTQuMyJX!5e0!3m2!1sen!2sus!4v1635959673901!5m2!1sen!2sus"
+            width="100%"
+            height="400"
+            style="border:0;"
+            allowfullscreen=""
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            title="WTF Location Map"
+          ></iframe>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Additional Info -->
+    <div class="location-extras">
+      <!-- Parking Info -->
+      <div class="info-card">
+        <div class="info-card__icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M13 3H6v18h4v-6h3c3.31 0 6-2.69 6-6s-2.69-6-6-6zm.2 8H10V7h3.2c1.1 0 2 .9 2 2s-.9 2-2 2z"/>
+          </svg>
+        </div>
+        <div class="info-card__content">
+          <h3 class="info-card__title">Parking</h3>
+          <p class="info-card__text">{{ section.settings.parking_info | default: 'Free parking available in front and rear of building' }}</p>
+        </div>
+      </div>
+      
+      <!-- Public Transit -->
+      <div class="info-card">
+        <div class="info-card__icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2c-4 0-8 .5-8 4v9.5C4 17.43 5.57 19 7.5 19L6 20.5v.5h2l2-2h4l2 2h2v-.5L16.5 19c1.93 0 3.5-1.57 3.5-3.5V6c0-3.5-4-4-8-4zm0 2c3.71 0 5.13.46 5.67 1H6.43c.6-.52 2.05-1 5.57-1zM6 7h5v3H6V7zm12 8c0 .83-.67 1.5-1.5 1.5h-9c-.83 0-1.5-.67-1.5-1.5V12h12v3zm0-5h-5V7h5v3z"/>
+          </svg>
+        </div>
+        <div class="info-card__content">
+          <h3 class="info-card__title">Public Transit</h3>
+          <p class="info-card__text">{{ section.settings.transit_info | default: 'Bus stops within walking distance. Near major transit routes.' }}</p>
+        </div>
+      </div>
+      
+      <!-- Accessibility -->
+      <div class="info-card">
+        <div class="info-card__icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm9 7h-6v13h-2v-6h-2v6H9V9H3V7h18v2z"/>
+          </svg>
+        </div>
+        <div class="info-card__content">
+          <h3 class="info-card__title">Accessibility</h3>
+          <p class="info-card__text">{{ section.settings.accessibility_info | default: 'Wheelchair accessible entrance and seating. ADA compliant facilities.' }}</p>
+        </div>
+      </div>
+      
+      <!-- WiFi -->
+      <div class="info-card">
+        <div class="info-card__icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
+          </svg>
+        </div>
+        <div class="info-card__content">
+          <h3 class="info-card__title">Free WiFi</h3>
+          <p class="info-card__text">{{ section.settings.wifi_info | default: 'High-speed WiFi available for all customers' }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Delivery Partners -->
+    <div class="delivery-section">
+      <h3 class="delivery-section__title">Order Delivery</h3>
+      <p class="delivery-section__subtitle">Can't make it in? Order through our delivery partners:</p>
+      
+      <div class="delivery-partners">
+        <a href="{{ section.settings.ubereats_url }}" class="delivery-partner" target="_blank" rel="noopener">
+          <svg class="delivery-partner__logo" viewBox="0 0 1052 170" fill="currentColor">
+            <path d="M787.3 105.6c0-21-16.8-37.5-38-37.5-20.9 0-38 16.5-38 37.5s17.1 37.5 38 37.5c21.2 0 38-16.5 38-37.5zm-28.3 0c0 5.3-4.4 9.7-9.7 9.7-5.3 0-9.7-4.4-9.7-9.7s4.4-9.7 9.7-9.7c5.3 0 9.7 4.4 9.7 9.7z"/>
+          </svg>
+          <span>Uber Eats</span>
+        </a>
+        
+        <a href="{{ section.settings.doordash_url }}" class="delivery-partner" target="_blank" rel="noopener">
+          <svg class="delivery-partner__logo" viewBox="0 0 100 20" fill="currentColor">
+            <path d="M0 0h20v20H0z"/>
+          </svg>
+          <span>DoorDash</span>
+        </a>
+        
+        <a href="{{ section.settings.grubhub_url }}" class="delivery-partner" target="_blank" rel="noopener">
+          <svg class="delivery-partner__logo" viewBox="0 0 100 20" fill="currentColor">
+            <path d="M0 0h20v20H0z"/>
+          </svg>
+          <span>Grubhub</span>
+        </a>
+      </div>
+      
+      <p class="delivery-section__note">
+        Note: Drinks are pickup only when ordered through our website. Delivery available through partner apps only.
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .locations-section {
+    padding: 40px 0;
+    background: #f8f9fa;
+  }
+  
+  .locations__container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+  
+  /* Location Card */
+  .location-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 40px;
+  }
+  
+  .location-card__header {
+    padding: 30px;
+    background: linear-gradient(135deg, {{ settings.color_primary | default: '#ff6600' }}, #ff8533);
+    color: white;
+  }
+  
+  .location-card__title {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 15px;
+  }
+  
+  .location-card__badge {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+  }
+  
+  .location-card__body {
+    padding: 30px;
+  }
+  
+  /* Location Info */
+  .location-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+    margin-bottom: 40px;
+  }
+  
+  .location-info__item {
+    display: flex;
+    gap: 15px;
+  }
+  
+  .location-info__icon {
+    flex-shrink: 0;
+    color: {{ settings.color_primary | default: '#ff6600' }};
+  }
+  
+  .location-info__content {
+    flex: 1;
+  }
+  
+  .location-info__label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .location-info__value {
+    font-size: 16px;
+    color: #212529;
+    line-height: 1.5;
+  }
+  
+  .location-info__value--link {
+    color: {{ settings.color_primary | default: '#ff6600' }};
+    text-decoration: none;
+  }
+  
+  .location-info__value--link:hover {
+    text-decoration: underline;
+  }
+  
+  .location-info__link {
+    display: inline-block;
+    margin-top: 8px;
+    color: {{ settings.color_primary | default: '#ff6600' }};
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  
+  .location-info__link:hover {
+    text-decoration: underline;
+  }
+  
+  address {
+    font-style: normal;
+  }
+  
+  /* Map */
+  .location-map {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Info Cards */
+  .location-extras {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+  
+  .info-card {
+    display: flex;
+    gap: 15px;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .info-card__icon {
+    flex-shrink: 0;
+    color: {{ settings.color_primary | default: '#ff6600' }};
+  }
+  
+  .info-card__content {
+    flex: 1;
+  }
+  
+  .info-card__title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #212529;
+  }
+  
+  .info-card__text {
+    font-size: 14px;
+    color: #6c757d;
+    line-height: 1.5;
+  }
+  
+  /* Delivery Section */
+  .delivery-section {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+  }
+  
+  .delivery-section__title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #212529;
+  }
+  
+  .delivery-section__subtitle {
+    font-size: 16px;
+    color: #6c757d;
+    margin-bottom: 25px;
+  }
+  
+  .delivery-partners {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  
+  .delivery-partner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 30px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #212529;
+    transition: all 0.2s;
+  }
+  
+  .delivery-partner:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background: {{ settings.color_primary | default: '#ff6600' }};
+    color: white;
+  }
+  
+  .delivery-partner__logo {
+    width: 60px;
+    height: 30px;
+    object-fit: contain;
+  }
+  
+  .delivery-partner span {
+    font-weight: 600;
+    font-size: 14px;
+  }
+  
+  .delivery-section__note {
+    font-size: 13px;
+    color: #6c757d;
+    font-style: italic;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #dee2e6;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .location-card__title {
+      font-size: 24px;
+    }
+    
+    .location-info {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    
+    .location-extras {
+      grid-template-columns: 1fr;
+    }
+    
+    .delivery-partners {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .delivery-partner {
+      flex-direction: row;
+      justify-content: center;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Locations",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Location Information"
+    },
+    {
+      "type": "text",
+      "id": "location_name",
+      "label": "Location Name",
+      "default": "WTF Kava Bar"
+    },
+    {
+      "type": "text",
+      "id": "street_address",
+      "label": "Street Address",
+      "default": "123 Main Street"
+    },
+    {
+      "type": "text",
+      "id": "city",
+      "label": "City",
+      "default": "Fort Lauderdale"
+    },
+    {
+      "type": "text",
+      "id": "state",
+      "label": "State",
+      "default": "FL"
+    },
+    {
+      "type": "text",
+      "id": "zip",
+      "label": "ZIP Code",
+      "default": "33301"
+    },
+    {
+      "type": "text",
+      "id": "latitude",
+      "label": "Latitude",
+      "default": "26.1224",
+      "info": "For map display"
+    },
+    {
+      "type": "text",
+      "id": "longitude",
+      "label": "Longitude",
+      "default": "-80.1373",
+      "info": "For map display"
+    },
+    {
+      "type": "header",
+      "content": "Contact Information"
+    },
+    {
+      "type": "text",
+      "id": "phone",
+      "label": "Phone Number",
+      "default": "+15555555555"
+    },
+    {
+      "type": "text",
+      "id": "phone_display",
+      "label": "Phone Display Format",
+      "default": "(555) 555-5555"
+    },
+    {
+      "type": "text",
+      "id": "email",
+      "label": "Email Address"
+    },
+    {
+      "type": "header",
+      "content": "Additional Information"
+    },
+    {
+      "type": "text",
+      "id": "parking_info",
+      "label": "Parking Information",
+      "default": "Free parking available in front and rear of building"
+    },
+    {
+      "type": "text",
+      "id": "transit_info",
+      "label": "Public Transit Information",
+      "default": "Bus stops within walking distance. Near major transit routes."
+    },
+    {
+      "type": "text",
+      "id": "accessibility_info",
+      "label": "Accessibility Information",
+      "default": "Wheelchair accessible entrance and seating. ADA compliant facilities."
+    },
+    {
+      "type": "text",
+      "id": "wifi_info",
+      "label": "WiFi Information",
+      "default": "High-speed WiFi available for all customers"
+    },
+    {
+      "type": "header",
+      "content": "Delivery Partners"
+    },
+    {
+      "type": "url",
+      "id": "ubereats_url",
+      "label": "Uber Eats URL"
+    },
+    {
+      "type": "url",
+      "id": "doordash_url",
+      "label": "DoorDash URL"
+    },
+    {
+      "type": "url",
+      "id": "grubhub_url",
+      "label": "Grubhub URL"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Locations"
+    }
+  ]
+}
+{% endschema %}

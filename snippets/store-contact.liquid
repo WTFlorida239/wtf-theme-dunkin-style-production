@@ -1,0 +1,70 @@
+{% comment %}
+  Store contact block that reads from Theme Settings (no metafields/JSON required).
+  Add the "Store info" settings group to config/settings_schema.json (see the companion file).
+  Usage: {% render 'store-contact' %}
+{% endcomment %}
+
+{% assign phone = settings.store_phone | strip %}
+{% assign email = settings.store_email | strip %}
+{% assign a1 = settings.store_address_1 | strip %}
+{% assign a2 = settings.store_address_2 | strip %}
+{% assign city = settings.store_city | strip %}
+{% assign state = settings.store_state | strip %}
+{% assign zip = settings.store_zip | strip %}
+
+{% assign addr = '' %}
+{% if a1 != blank %}{% assign addr = a1 %}{% endif %}
+{% if a2 != blank %}{% assign addr = addr | append: ', ' | append: a2 %}{% endif %}
+
+{% assign citystatezip = '' %}
+{% if city != blank %}{% assign citystatezip = city %}{% endif %}
+{% if state != blank %}
+  {% if citystatezip != '' %}{% assign citystatezip = citystatezip | append: ', ' %}{% endif %}
+  {% assign citystatezip = citystatezip | append: state %}
+{% endif %}
+{% if zip != blank %}{% assign citystatezip = citystatezip | append: ' ' | append: zip %}{% endif %}
+
+{% assign full_address = addr %}
+{% if citystatezip != '' %}{% assign full_address = full_address | append: ', ' | append: citystatezip %}{% endif %}
+
+<div class="store-contact" itemscope itemtype="https://schema.org/LocalBusiness">
+  <meta itemprop="name" content="{{ shop.name }}">
+  {% if phone != blank %}
+    <p>
+      <strong>Phone:</strong> <a href="tel:{{ phone | remove: ' ' }}">{{ phone }}</a>
+    </p>
+    <meta itemprop="telephone" content="{{ phone }}">
+  {% endif %}
+
+  {% if email != blank %}
+    <p>
+      <strong>Email:</strong> <a href="mailto:{{ email }}">{{ email }}</a>
+    </p>
+    <meta itemprop="email" content="{{ email }}">
+  {% endif %}
+
+  {% if full_address != blank %}
+    <p>
+      <strong>Address:</strong>
+      <a href="https://maps.google.com/?q={{ full_address | url_encode }}" target="_blank" rel="noopener">
+        {{ full_address }}
+      </a>
+    </p>
+    <div itemprop="address" itemscope itemtype="https://schema.org/PostalAddress">
+      {% if a1 != blank -%}
+        <meta itemprop="streetAddress" content="{{ a1 }}{% if a2 != blank %}, {{ a2 }}{% endif %}">
+      {%- endif %}
+      {% if city != blank %}<meta itemprop="addressLocality" content="{{ city }}">{% endif %}
+      {% if state != blank %}<meta itemprop="addressRegion" content="{{ state }}">{% endif %}
+      {% if zip != blank %}<meta itemprop="postalCode" content="{{ zip }}">{% endif %}
+      <meta itemprop="addressCountry" content="US">
+    </div>
+  {% endif %}
+
+  {% if settings.store_hours != blank %}
+    <p>
+      <strong>Hours:</strong><br>
+      {{ settings.store_hours | newline_to_br }}
+    </p>
+  {% endif %}
+</div>

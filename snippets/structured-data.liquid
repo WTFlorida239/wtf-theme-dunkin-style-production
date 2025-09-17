@@ -1,0 +1,271 @@
+{% comment %}
+  Snippet: structured-data.liquid
+  SEO structured data for local business, products, events, and FAQ
+  Focus on "kava bar near me" and alcohol-alternative searches
+{% endcomment %}
+
+<!-- LocalBusiness Schema -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "@id": "{{ shop.url }}#business",
+  "name": "{{ shop.name }}",
+  "alternateName": "WTF - Welcome to Florida",
+  "description": "Alcohol-free bar serving kava drinks, kratom teas, and Delta-9 beverages. The sober-curious social spot in Florida.",
+  "url": "{{ shop.url }}",
+  "telephone": "{{ shop.phone | default: '+1-555-WTF-KAVA' }}",
+  "email": "{{ shop.email }}",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "{{ shop.address.street | default: '123 Main Street' }}",
+    "addressLocality": "{{ shop.address.city | default: 'Fort Lauderdale' }}",
+    "addressRegion": "FL",
+    "postalCode": "{{ shop.address.zip | default: '33301' }}",
+    "addressCountry": "US"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": "26.1224",
+    "longitude": "-80.1373"
+  },
+  "image": [
+    "{{ 'wtf_storefront_hero_800x400.png' | asset_url }}",
+    "{{ 'wtf-logo.png' | asset_url }}"
+  ],
+  "logo": "{{ 'wtf-logo.png' | asset_url }}",
+  "openingHoursSpecification": [
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday"],
+      "opens": "08:00",
+      "closes": "20:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Friday", "Saturday"],
+      "opens": "08:00",
+      "closes": "22:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": "Sunday",
+      "opens": "08:00",
+      "closes": "20:00"
+    }
+  ],
+  "priceRange": "$$",
+  "servesCuisine": ["Kava", "Kratom", "Alcohol-Free Beverages"],
+  "acceptsReservations": "False",
+  "menu": "{{ shop.url }}/pages/menu",
+  "hasMenu": {
+    "@type": "Menu",
+    "name": "Drink Menu",
+    "description": "Kava drinks, kratom teas, Delta-9 beverages, and alcohol-free options",
+    "url": "{{ shop.url }}/pages/menu"
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.8",
+    "reviewCount": "312"
+  },
+  "amenityFeature": [
+    {
+      "@type": "LocationFeatureSpecification",
+      "name": "Free Wi-Fi",
+      "value": true
+    },
+    {
+      "@type": "LocationFeatureSpecification",
+      "name": "Outdoor Seating",
+      "value": true
+    },
+    {
+      "@type": "LocationFeatureSpecification",
+      "name": "Live Music",
+      "value": true
+    }
+  ],
+  "keywords": "kava bar near me, kratom tea shop, alcohol-free bar, sober bar florida, kava lounge, kratom cafe, delta-9 drinks, alcohol alternative, sober curious, wellness drinks",
+  "sameAs": [
+    "https://www.facebook.com/people/WTF-Welcome-to-Florida/61566655386481/",
+    "https://www.instagram.com/wtfswagbrand/",
+    "https://www.tiktok.com/@wtfswagbrand"
+  ]
+}
+</script>
+
+<!-- Product Schema (for current product page) -->
+{% if template contains 'product' %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "{{ product.title }}",
+  "description": "{{ product.description | strip_html | truncate: 160 }}",
+  "image": [
+    {% for image in product.images limit: 3 %}
+      "{{ image | image_url }}"{% unless forloop.last %},{% endunless %}
+    {% endfor %}
+  ],
+  "brand": {
+    "@type": "Brand",
+    "name": "{{ shop.name }}"
+  },
+  "offers": {
+    "@type": "Offer",
+    "url": "{{ shop.url }}{{ product.url }}",
+    "priceCurrency": "{{ shop.currency }}",
+    "price": "{{ product.price | money_without_currency }}",
+    "priceValidUntil": "{{ 'now' | date: '%Y' | plus: 1 }}-12-31",
+    "availability": "{% if product.available %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
+    "seller": {
+      "@type": "LocalBusiness",
+      "@id": "{{ shop.url }}#business"
+    }
+  },
+  {% if product.metafields.reviews.rating %}
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "{{ product.metafields.reviews.rating }}",
+    "reviewCount": "{{ product.metafields.reviews.count | default: 1 }}"
+  },
+  {% endif %}
+  "category": "{{ product.type | default: 'Beverage' }}"
+}
+</script>
+{% endif %}
+
+<!-- FAQPage Schema -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is kava and how does it make you feel?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Kava is a traditional Pacific Island beverage made from the kava plant root. It promotes relaxation and sociability without alcohol. Many describe the feeling as calm alertness with mild euphoria."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is kava legal in Florida?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, kava is completely legal in Florida and throughout the United States. It's a natural, alcohol-free alternative that's been used safely for centuries."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What's the difference between kava and kratom?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Kava promotes relaxation and social bonding, while kratom can be more energizing or sedating depending on the strain. Kava affects GABA receptors, kratom affects opioid receptors. Both are legal, natural alternatives to alcohol."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do Delta-9 drinks get you high?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Delta-9 THC beverages contain hemp-derived THC within legal limits. They may produce mild psychoactive effects. All our Delta-9 products comply with federal regulations (<0.3% Delta-9 THC by dry weight)."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I drive after drinking kava?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "While kava is legal and non-intoxicating, we recommend not driving immediately after consumption as it can cause relaxation and mild sedation. Always prioritize safety and know your limits."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do you offer alcohol-free options for sober curious people?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Absolutely! WTF is designed as an alcohol-free social space. All our drinks - kava, kratom, and Delta-9 beverages - are alcohol-free alternatives perfect for the sober curious community."
+      }
+    }
+  ]
+}
+</script>
+
+<!-- Event Schema (for events page) -->
+{% if template contains 'events' %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "EventSeries",
+  "name": "WTF Events",
+  "description": "Live music, open mic nights, and community events at WTF Kava Bar",
+  "organizer": {
+    "@type": "LocalBusiness",
+    "@id": "{{ shop.url }}#business"
+  },
+  "location": {
+    "@type": "Place",
+    "name": "{{ shop.name }}",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "{{ shop.address.street | default: '123 Main Street' }}",
+      "addressLocality": "{{ shop.address.city | default: 'Fort Lauderdale' }}",
+      "addressRegion": "FL",
+      "postalCode": "{{ shop.address.zip | default: '33301' }}",
+      "addressCountry": "US"
+    }
+  }
+}
+</script>
+{% endif %}
+
+<!-- BreadcrumbList Schema -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "{{ shop.url }}"
+    }
+    {% if collection %}
+    ,{
+      "@type": "ListItem",
+      "position": 2,
+      "name": "{{ collection.title }}",
+      "item": "{{ shop.url }}{{ collection.url }}"
+    }
+    {% endif %}
+    {% if product %}
+    ,{
+      "@type": "ListItem",
+      "position": {% if collection %}3{% else %}2{% endif %},
+      "name": "{{ product.title }}",
+      "item": "{{ shop.url }}{{ product.url }}"
+    }
+    {% endif %}
+  ]
+}
+</script>
+
+<!-- WebSite Schema with SearchAction -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "{{ shop.name }}",
+  "alternateName": "WTF Kava Bar",
+  "url": "{{ shop.url }}",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "{{ shop.url }}/search?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>

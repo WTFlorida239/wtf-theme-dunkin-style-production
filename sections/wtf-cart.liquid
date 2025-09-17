@@ -1,0 +1,324 @@
+{% comment %}
+  WTF – Cart (polished v2)
+  - Cleaner summary card (no empty bullets)
+  - Inline discount code (opens checkout with ?discount=)
+  - Free-shipping progress bar (optional)
+  - Tight spacing, brand buttons, better visual balance
+{% endcomment %}
+
+{% schema %}
+{
+  "name": "Cart (WTF)",
+  "settings": [
+    { "type": "checkbox", "id": "show_vendor", "label": "Show vendor", "default": false },
+    { "type": "checkbox", "id": "show_sku", "label": "Show SKU", "default": false },
+    { "type": "checkbox", "id": "show_shipping_note", "label": "Show order note", "default": true },
+    {
+      "type": "number",
+      "id": "free_shipping_threshold",
+      "label": "Free shipping threshold (in shop currency)",
+      "default": 0,
+      "info": "Set to 0 to hide the progress bar"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_discount_code",
+      "label": "Show discount code field (applies at checkout)",
+      "default": true
+    }
+  ]
+}
+{% endschema %}
+
+{% liquid
+  assign threshold = section.settings.free_shipping_threshold | times: 100
+%}
+
+<section class="wtf-cart" data-section-id="{{ section.id }}">
+  <div class="wtf-container">
+    <h1 class="wtf-cart__title">Your cart</h1>
+
+    {% if cart.item_count == 0 %}
+      <div class="wtf-empty">
+        <p>Your cart is empty.</p>
+        <a class="btn btn--primary" href="{{ routes.all_products_collection_url }}">Shop products</a>
+      </div>
+    {% else %}
+      <form action="{{ routes.cart_url }}" method="post" novalidate class="wtf-cart__form">
+        <ul class="wtf-lines" role="list">
+          {% for item in cart.items %}
+            <li class="wtf-line" data-line="{{ forloop.index }}">
+              <a class="wtf-line__media" href="{{ item.url }}">
+                {% if item.image %}
+                  <img
+                    src="{{ item.image | image_url: width: 220 }}"
+                    srcset="{{ item.image | image_url: width: 220 }} 1x, {{ item.image | image_url: width: 440 }} 2x"
+                    width="110"
+                    height="{{ 110 | divided_by: item.image.aspect_ratio | round }}"
+                    alt="{{ item.image.alt | escape }}"
+                    loading="lazy"
+                  >
+                {% else %}
+                  <div class="wtf-placeholder" aria-hidden="true"></div>
+                {% endif %}
+              </a>
+
+              <div class="wtf-line__main">
+                <a class="wtf-line__title" href="{{ item.url }}">{{ item.product.title }}</a>
+
+                {% if item.product.has_only_default_variant == false %}
+                  <div class="wtf-line__options">
+                    {% for option in item.options_with_values %}
+                      <span class="wtf-badge">{{ option.name }}: {{ option.value }}</span>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+
+                {% comment %} Line Item Properties (strain, flavors, etc.) {% endcomment %}
+                {% if item.properties != empty %}
+                  <div class="wtf-line__properties">
+                    {% for p in item.properties %}
+                      {% unless p.first contains '_' or p.last == blank or p.last == 'false' %}
+                        <div class="wtf-property"><strong>{{ p.first }}:</strong> {{ p.last }}</div>
+                      {% endunless %}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+
+                {% if section.settings.show_vendor and item.product.vendor != blank %}
+                  <div class="wtf-meta">by {{ item.product.vendor }}</div>
+                {% endif %}
+                {% if section.settings.show_sku and item.sku != blank %}
+                  <div class="wtf-meta">SKU: {{ item.sku }}</div>
+                {% endif %}
+
+                <div class="wtf-line__controls">
+                  <div class="wtf-qty">
+                    <button type="button" class="wtf-qty__btn" aria-label="Decrease" data-qty-dec>−</button>
+                    <input
+                      class="wtf-qty__input"
+                      type="number"
+                      min="0"
+                      name="updates[]"
+                      value="{{ item.quantity }}"
+                      aria-label="Quantity for {{ item.product.title }}"
+                    >
+                    <button type="button" class="wtf-qty__btn" aria-label="Increase" data-qty-inc>+</button>
+                  </div>
+
+                  <button
+                    class="wtf-remove"
+                    name="updates[]"
+                    value="0"
+                    formaction="{{ routes.cart_change_url }}?line={{ forloop.index }}"
+                    aria-label="Remove {{ item.product.title }}"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+
+              <div class="wtf-line__price">
+                {% if item.original_price > item.final_price %}
+                  <div class="wtf-price">
+                    <span class="wtf-price__current">{{ item.final_price | money }}</span>
+                    <s class="wtf-price__compare">{{ item.original_price | money }}</s>
+                  </div>
+                {% else %}
+                  <div class="wtf-price">
+                    <span class="wtf-price__current">{{ item.final_price | money }}</span>
+                  </div>
+                {% endif %}
+
+                {% if item.line_level_discount_allocations.size > 0 %}
+                  <ul class="wtf-discounts" role="list">
+                    {% for alloc in item.line_level_discount_allocations %}
+                      <li>{{ alloc.discount_application.title }} (−{{ alloc.amount | money }})</li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+
+        <div class="wtf-cart__bottom">
+          <div class="wtf-note">
+            {% if section.settings.show_shipping_note %}
+              <label for="CartNote" class="wtf-label">Order note</label>
+              <textarea
+                id="CartNote"
+                name="note"
+                rows="3"
+                placeholder="Add special instructions"
+              >{{ cart.note }}</textarea>
+            {% endif %}
+          </div>
+
+          <div class="wtf-summary" aria-label="Order summary">
+            {% if threshold > 0 %}
+              {% assign progress = cart.total_price | times: 100 | divided_by: threshold %}
+              {% if cart.total_price >= threshold %}
+                <div class="wtf-freebar success">
+                  <span>🎉 You’ve unlocked free shipping!</span>
+                  <div class="bar"><i style="width:100%"></i></div>
+                </div>
+              {% else %}
+                {% assign remaining = threshold | minus: cart.total_price %}
+                <div class="wtf-freebar">
+                  <span>You're {{ remaining | money }} away from free shipping</span>
+                  <div class="bar"><i style="width:{{ progress | at_most: 100 }}%"></i></div>
+                </div>
+              {% endif %}
+            {% endif %}
+
+            {% if section.settings.show_discount_code %}
+              <div class="wtf-discount-row">
+                <input type="text" id="discount" class="wtf-input" placeholder="Discount code" autocomplete="off">
+                <button type="button" class="btn btn--secondary" id="apply-discount">Apply</button>
+              </div>
+            {% endif %}
+
+            <div class="wtf-subtotal">
+              <span>Subtotal</span>
+              <strong>{{ cart.total_price | money }}</strong>
+            </div>
+
+            {% if cart.cart_level_discount_applications.size > 0 %}
+              <ul class="wtf-discounts wtf-discounts--summary" role="list">
+                {% for app in cart.cart_level_discount_applications %}
+                  <li>{{ app.title }} (−{{ app.total_allocated_amount | money }})</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+
+            <p class="wtf-fineprint">Taxes and shipping calculated at checkout.</p>
+
+            <div class="wtf-actions">
+              <a class="btn btn--secondary" href="{{ routes.all_products_collection_url }}">Continue shopping</a>
+              <button class="btn btn--primary" name="checkout" type="submit">Checkout</button>
+            </div>
+          </div>
+        </div>
+
+        <input type="hidden" name="updates[]" value="" aria-hidden="true">
+      </form>
+    {% endif %}
+  </div>
+</section>
+
+<style>
+  .wtf-container{max-width:1100px;margin:0 auto;padding:clamp(16px,2vw,28px)}
+  .wtf-cart__title{font-size:clamp(22px,2.4vw,32px);margin:8px 0 16px;font-weight:700}
+  .wtf-empty{text-align:center;padding:40px 0}
+  .wtf-lines{display:grid;gap:16px;margin:0;padding:0;list-style:none}
+  .wtf-line{display:grid;grid-template-columns:96px 1fr auto;gap:12px;align-items:center;padding:12px;border-radius:14px;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.06)}
+  .wtf-line__media img{display:block;border-radius:12px;background:#f6f6f6}
+  .wtf-line__title{display:block;font-weight:600;color:#111;margin-bottom:6px;text-decoration:none}
+  .wtf-line__options{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px}
+  .wtf-badge{font-size:12px;padding:4px 8px;border-radius:999px;background:#f1f1f1}
+  .wtf-line__properties{margin:4px 0 8px}
+  .wtf-property{font-size:12px;padding:2px 6px;border-radius:6px;background:#e8f4fd;color:#0066cc;margin-right:4px;margin-bottom:2px;display:inline-block}
+  .wtf-meta{font-size:12px;color:#666}
+  .wtf-line__controls{display:flex;align-items:center;gap:12px;margin-top:10px}
+  .wtf-qty{display:inline-flex;align-items:center;border:1px solid #e1e1e1;border-radius:10px;overflow:hidden}
+  .wtf-qty__btn{width:36px;height:36px;border:0;background:#fafafa;cursor:pointer;font-size:18px;line-height:0}
+  .wtf-qty__input{width:46px;height:36px;border:0;text-align:center;font-weight:600}
+  .wtf-remove{background:none;border:0;color:#888;text-decoration:underline;cursor:pointer}
+
+  .wtf-line__price{text-align:right}
+  .wtf-price__current{font-weight:700}
+  .wtf-price__compare{color:#888;margin-left:6px}
+
+  .wtf-cart__bottom{display:grid;grid-template-columns:1fr minmax(300px,360px);gap:28px;margin-top:18px}
+  .wtf-label{display:block;font-weight:600;margin-bottom:6px}
+  .wtf-note textarea{width:100%;border:1px solid #e1e1e1;border-radius:12px;padding:12px;min-height:92px}
+
+  .wtf-summary ul,
+  .wtf-summary li { list-style: none; padding-left: 0; margin-left: 0; }
+  .wtf-summary li::marker { content: ''; }
+  .wtf-subtotal{display:flex;justify-content:space-between;align-items:center;font-size:16px;margin:10px 0 8px}
+  .wtf-fineprint{color:#666;font-size:12px;margin:8px 0 14px}
+
+  .wtf-actions{display:flex;gap:10px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;justify-content:center;height:46px;padding:0 16px;border-radius:12px;border:0;cursor:pointer;font-weight:700}
+  .btn--primary{background:#ff6600;color:#fff}
+  .btn--secondary{background:#f1f1f1;color:#111}
+
+  .wtf-discount-row{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:10px}
+  .wtf-input{height:44px;border:1px solid #e1e1e1;border-radius:10px;padding:0 12px}
+
+  .wtf-freebar{background:#fff;border:1px solid #f0f0f0;border-radius:12px;padding:10px;margin-bottom:12px}
+  .wtf-freebar span{display:block;font-size:13px;margin-bottom:6px}
+  .wtf-freebar .bar{height:8px;background:#f3f3f3;border-radius:999px;overflow:hidden}
+  .wtf-freebar .bar i{display:block;height:100%;width:0;background:#ff6600}
+  .wtf-freebar.success{border-color:#e7f7ec}
+  .wtf-freebar.success .bar i{background:#0a7a3f}
+
+  .wtf-discounts{color:#0a7a3f;font-size:13px}
+  .wtf-discounts--summary{margin-top:4px}
+
+  @media (max-width: 799px){
+    .wtf-line{grid-template-columns:78px 1fr auto}
+    .wtf-cart__bottom{grid-template-columns:1fr}
+    .wtf-actions{flex-direction:column}
+    .btn{width:100%}
+  }
+</style>
+
+<script>
+  (function () {
+    var ROOT = window.Shopify && Shopify.routes && Shopify.routes.root ? Shopify.routes.root : '/';
+    var cartForm = document.querySelector('.wtf-cart__form');
+    if (!cartForm) return;
+
+    // Qty stepper
+    cartForm.addEventListener('click', function (e) {
+      var dec = e.target.closest('[data-qty-dec]');
+      var inc = e.target.closest('[data-qty-inc]');
+      if (!dec && !inc) return;
+
+      var line = e.target.closest('.wtf-line');
+      if (!line) return;
+      var input = line.querySelector('.wtf-qty__input');
+      var current = parseInt(input.value || 0, 10);
+
+      if (dec) {
+        current = Math.max(0, current - 1);
+      }
+      if (inc) {
+        current = current + 1;
+      }
+      input.value = current;
+
+      var index = line.getAttribute('data-line');
+      var form = new FormData();
+      form.set('line', index);
+      form.set('quantity', current);
+
+      fetch(ROOT + 'cart/change.js', {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: form,
+      }).then(function () {
+        location.reload();
+      });
+    });
+
+    // Discount → redirect to checkout with ?discount=
+    var btn = document.getElementById('apply-discount');
+    var input = document.getElementById('discount');
+    if (btn && input) {
+      btn.addEventListener('click', function () {
+        var code = (input.value || '').trim();
+        if (!code) return input.focus();
+        var url =
+          '{{ routes.checkout_url }}' +
+          ('{{ routes.checkout_url }}'.indexOf('?') > -1 ? '&' : '?') +
+          'discount=' +
+          encodeURIComponent(code);
+        window.location.href = url;
+      });
+    }
+  })();
+</script>

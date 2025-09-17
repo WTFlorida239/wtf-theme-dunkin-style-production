@@ -1,0 +1,283 @@
+{% comment %}
+  Snippet: wtf-line-item-properties.liquid
+  Standardized reader/writer for line item properties
+  Usage for writing: {% render 'wtf-line-item-properties', mode: 'write' %}
+  Usage for reading: {% render 'wtf-line-item-properties', mode: 'read', item: line_item %}
+{% endcomment %}
+
+{%- liquid
+  assign mode = mode | default: 'write'
+-%}
+
+{%- case mode -%}
+  {%- when 'write' -%}
+    <!-- Line Item Properties Form Fields -->
+    <div class="line-item-properties" data-line-item-properties>
+      <!-- Size Property -->
+      <input type="hidden" name="properties[Size]" value="Medium" data-property="size">
+      
+      <!-- Flavor Properties -->
+      <input type="hidden" name="properties[Flavor]" value="" data-property="flavor">
+      <input type="hidden" name="properties[Flavor Intensity]" value="Regular" data-property="flavor-intensity">
+
+      <!-- Strain / Concentration -->
+      <input type="hidden" name="properties[Strain]" value="" data-property="strain">
+      <input type="hidden" name="properties[Concentration]" value="Regular" data-property="concentration">
+      
+      <!-- Creamer Properties -->
+      <input type="hidden" name="properties[Creamer]" value="" data-property="creamer">
+      
+      <!-- Sweetener Properties -->
+      <input type="hidden" name="properties[Sweetener]" value="" data-property="sweetener">
+      
+      <!-- Ice Level -->
+      <input type="hidden" name="properties[Ice]" value="Regular" data-property="ice">
+      
+      <!-- Boosters (stored as JSON string) -->
+      <input type="hidden" name="properties[Boosters]" value="" data-property="boosters">
+      
+      <!-- Special Instructions -->
+      <input type="hidden" name="properties[Special Instructions]" value="" data-property="instructions">
+      
+      <!-- Price Adjustments -->
+      <input type="hidden" name="properties[_size_upcharge]" value="0" data-property="size-upcharge">
+      <input type="hidden" name="properties[_booster_upcharge]" value="0" data-property="booster-upcharge">
+      <input type="hidden" name="properties[_extra_pump_price]" value="0" data-property="extra-pump-price">
+      <input type="hidden" name="properties[_extra_pump_upcharge]" value="0" data-property="extra-pump-upcharge">
+
+      <!-- Pump Accounting -->
+      <input type="hidden" name="properties[Included Pumps]" value="0" data-property="included-pumps">
+      <input type="hidden" name="properties[Pump Count]" value="0" data-property="pump-count">
+      <input type="hidden" name="properties[Extra Pumps]" value="0" data-property="extra-pumps">
+      
+      <!-- Validation Flag -->
+      <input type="hidden" name="properties[_validated]" value="false" data-property="validated">
+    </div>
+    
+    <script>
+      // Line Item Properties Manager
+      window.WTFLineItemProperties = {
+        update: function(property, value) {
+          const input = document.querySelector(`[data-property="${property}"]`);
+          if (input) {
+            input.value = value;
+            
+            // Special handling for certain properties
+            if (property === 'size') {
+              this.handleSizeUpdate(value);
+            } else if (property === 'boosters') {
+              // Convert array to JSON string
+              if (Array.isArray(value)) {
+                input.value = JSON.stringify(value);
+              }
+            }
+          }
+        },
+        
+        handleSizeUpdate: function(size) {
+          // Update size-related properties (actual values will be set by section script)
+          const upchargeInput = document.querySelector('[data-property="size-upcharge"]');
+          if (upchargeInput) {
+            // leave existing value; section JS will overwrite precisely
+            upchargeInput.value = upchargeInput.value || 0;
+          }
+        },
+        
+        validate: function() {
+          const requiredFields = ['size'];
+          let isValid = true;
+          
+          requiredFields.forEach(field => {
+            const input = document.querySelector(`[data-property="${field}"]`);
+            if (!input || !input.value) {
+              isValid = false;
+            }
+          });
+          
+          // Update validation flag
+          const validatedInput = document.querySelector('[data-property="validated"]');
+          if (validatedInput) {
+            validatedInput.value = isValid.toString();
+          }
+          
+          return isValid;
+        },
+        
+        getAll: function() {
+          const properties = {};
+          document.querySelectorAll('[data-property]').forEach(input => {
+            const key = input.name.replace('properties[', '').replace(']', '');
+            properties[key] = input.value;
+          });
+          return properties;
+        },
+        
+        clear: function() {
+          document.querySelectorAll('[data-property]').forEach(input => {
+            if (input.dataset.property !== 'size') {
+              input.value = '';
+            }
+          });
+        }
+      };
+      
+      // Listen for modifier changes
+      document.addEventListener('wtf:modifiers-updated', function(e) {
+        const data = e.detail;
+        
+        if (data.size) {
+          WTFLineItemProperties.update('size', data.size);
+        }
+        
+        if (data.flavor) {
+          WTFLineItemProperties.update('flavor', data.flavor);
+        }
+        
+        if (data.boosters) {
+          WTFLineItemProperties.update('boosters', data.boosters);
+        }
+        
+        if (data.ice) {
+          WTFLineItemProperties.update('ice', data.ice);
+        }
+        
+        if (data.creamer) {
+          WTFLineItemProperties.update('creamer', data.creamer);
+        }
+        
+        if (data.sweetener) {
+          WTFLineItemProperties.update('sweetener', data.sweetener);
+        }
+      });
+    </script>
+
+  {%- when 'read' -%}
+    <!-- Display Line Item Properties -->
+    {%- if item.properties != empty -%}
+      <div class="line-item-properties-display">
+        {%- for property in item.properties -%}
+          {%- unless property.first contains '_' -%}
+            {%- if property.last != blank and property.last != 'false' -%}
+              <div class="property-item">
+                <span class="property-label">{{ property.first }}:</span>
+                <span class="property-value">
+                  {%- if property.first == 'Boosters' -%}
+                    {%- assign boosters = property.last | remove: '[' | remove: ']' | remove: '"' | split: ',' -%}
+                    {%- for booster in boosters -%}
+                      <span class="booster-chip">{{ booster | strip }}</span>
+                      {%- unless forloop.last -%}, {% endunless -%}
+                    {%- endfor -%}
+                  {%- else -%}
+                    {{ property.last }}
+                  {%- endif -%}
+                </span>
+              </div>
+            {%- endif -%}
+          {%- endunless -%}
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+
+  {%- when 'cart-display' -%}
+    <!-- Compact display for cart/mini-cart -->
+    {%- if item.properties != empty -%}
+      <ul class="cart-item-properties">
+        {%- assign has_properties = false -%}
+        
+        {%- for property in item.properties -%}
+          {%- unless property.first contains '_' or property.last == blank or property.last == 'false' -%}
+            {%- assign has_properties = true -%}
+            <li class="cart-item-property">
+              {%- case property.first -%}
+                {%- when 'Size' -%}
+                  📏 {{ property.last }}
+                {%- when 'Flavor' -%}
+                  🍓 {{ property.last }}
+                {%- when 'Ice' -%}
+                  🧊 {{ property.last }}
+                {%- when 'Boosters' -%}
+                  ⚡ {{ property.last | remove: '[' | remove: ']' | remove: '"' | replace: ',', ', ' }}
+                {%- when 'Special Instructions' -%}
+                  📝 {{ property.last | truncate: 30 }}
+                {%- else -%}
+                  {{ property.first }}: {{ property.last }}
+              {%- endcase -%}
+            </li>
+          {%- endunless -%}
+        {%- endfor -%}
+        
+        {%- unless has_properties -%}
+          <li class="cart-item-property cart-item-property--default">Standard preparation</li>
+        {%- endunless -%}
+      </ul>
+    {%- endif -%}
+{%- endcase -%}
+
+<style>
+  /* Line Item Properties Display Styles */
+  .line-item-properties-display {
+    margin-top: 10px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  
+  .property-item {
+    display: flex;
+    gap: 8px;
+    margin: 6px 0;
+  }
+  
+  .property-label {
+    font-weight: 600;
+    color: #495057;
+    min-width: 100px;
+  }
+  
+  .property-value {
+    color: #212529;
+  }
+  
+  .booster-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #e7f3ff;
+    border-radius: 12px;
+    font-size: 12px;
+    margin: 0 2px;
+  }
+  
+  /* Cart Display Styles */
+  .cart-item-properties {
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+    color: #666;
+  }
+  
+  .cart-item-property {
+    padding: 3px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .cart-item-property--default {
+    font-style: italic;
+    color: #999;
+  }
+  
+  @media (max-width: 768px) {
+    .property-item {
+      flex-direction: column;
+      gap: 2px;
+    }
+    
+    .property-label {
+      min-width: auto;
+      font-size: 12px;
+    }
+  }
+</style>
