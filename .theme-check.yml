@@ -1,0 +1,9 @@
+# Strict but practical defaults
+fail_level: error
+include_categories:
+  - Liquid
+  - Performance
+  - Deprecated
+exclude:
+  - node_modules/**
+  - assets/**.map
