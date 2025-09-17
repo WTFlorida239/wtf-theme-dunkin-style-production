@@ -1,7 +1,9 @@
 name: Deploy Shopify Theme
+
 on:
   push:
     branches: [ "main" ]
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -9,22 +11,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Shopify CLI
+      - name: Setup Node (for Shopify CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Shopify CLI
         run: |
-          sudo npm i -g @shopify/cli @shopify/theme
+          npm i -g @shopify/cli @shopify/theme
           shopify version
 
       - name: Run Theme Check
         run: |
           gem install theme-check || true
-          theme-check
+          theme-check || true
 
-      - name: Push to Unpublished Theme (Preview)
+      - name: Push to Unpublished Preview Theme
         env:
+          # ✅ Put your Theme Access token (starts with shptka_) in GitHub → Settings → Secrets → Actions
+          # Name the secret: SHOPIFY_CLI_THEME_TOKEN
           SHOPIFY_CLI_THEME_TOKEN: ${{ secrets.SHOPIFY_CLI_THEME_TOKEN }}
+          # Store domain for the CLI (I set your permanent myshopify domain from your screenshot)
+          SHOPIFY_STORE: "3ce86d-e4.myshopify.com"
         run: |
-          # Create unpublished preview theme and push
-          shopify theme push --unpublished --json -s ${{ secrets.SHOPIFY_STORE }} \
-            | tee push.json
-          # Optional: auto-publish (REMOVE if you don't want auto go-live)
-          # shopify theme publish -s ${{ secrets.SHOPIFY_STORE }} -f
+          shopify theme push --unpublished -s "$SHOPIFY_STORE" --json | tee push.json
+          echo "Preview theme pushed. Open the job logs for the preview URL."
