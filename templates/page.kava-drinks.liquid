@@ -1,14 +1,13 @@
 {%- comment -%}
-  Kava Drinks — Styled list view (homepage card style)
+  Kava Drinks — Size = variant; Flavor = line item property
+  Config:
+    - Set page metafield: namespace `wtf`, key `product_handle` → product handle to sell here.
+      If not set, defaults to 'kava-drink-base'.
+  Requirements:
+    - assets/wtf-variants.js (canonical variant resolver for Size chips)
+    - assets/wtf-ajax-cart.js (AJAX add-to-cart for [data-wtf-ajax] forms)
+    - layout/theme.liquid includes the cart count hydrator and the two assets once.
 {%- endcomment -%}
-{% render 'wtf-drink-data' %}
-{% render 'wtf-collection-cards',
-  title: 'Kava Drinks',
-  subtitle: 'Traditional Pacific island relaxation beverages',
-  items: WTF_KAVA_ITEMS,
-  color: 'kava',
-  back_url: routes.root_url
-%}
 
 {%- assign kava_handle = page.metafields.wtf.product_handle | default: 'kava-drink-base' -%}
 {%- assign product = all_products[kava_handle] -%}
