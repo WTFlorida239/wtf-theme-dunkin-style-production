@@ -1,13 +1,27 @@
 {%- comment -%}
-  Kratom Teas — Size = variant; Flavor = line item property
+  Kratom Teas — Size = variant; Flavor = line item properties
+  Adds grouped flavors (Sugar-Free vs Regular) and saves "Flavor Category".
+  "Gallon" size hides flavor chips and shows a staff note.
+
   Config:
     - Set page metafield: namespace `wtf`, key `product_handle` → product handle to sell here.
       If not set, defaults to 'custom-kratom-tea'.
+
   Requirements:
-    - assets/wtf-variants.js (canonical variant resolver for Size chips)
+    - assets/wtf-variants.js (maps Size chips → hidden variant id)
     - assets/wtf-ajax-cart.js (AJAX add-to-cart for [data-wtf-ajax] forms)
-    - layout/theme.liquid includes the cart count hydrator and the two assets once.
+    - layout/theme.liquid includes the cart count hydrator and these assets once.
 {%- endcomment -%}
+
+{%- comment -%} Styled flavor list (homepage card style) {%- endcomment -%}
+{% render 'wtf-drink-data' %}
+{% render 'wtf-collection-cards',
+  title: 'Kratom Teas',
+  subtitle: 'Green, Red, White & Yellow strains with premium flavorings',
+  items: WTF_KRATOM_ITEMS,
+  color: 'kratom',
+  back_url: routes.root_url
+%}
 
 {%- assign kratom_handle = page.metafields.wtf.product_handle | default: 'custom-kratom-tea' -%}
 {%- assign product = all_products[kratom_handle] -%}
@@ -43,7 +57,7 @@
       method="post"
       enctype="multipart/form-data"
       data-wtf-ajax
-      style="display:block; background:#fff;border:1px solid #eee;border-radius:16px;padding:16px 16px 20px;box-shadow:0 6px 24px rgba(0,0,0,.06);"
+      style="display:block;background:#fff;border:1px solid #eee;border-radius:16px;padding:16px 16px 20px;box-shadow:0 6px 24px rgba(0,0,0,.06);"
     >
       {%- comment -%} Expose product JSON so wtf-variants.js doesn’t need to fetch {%- endcomment -%}
       <script>
@@ -63,7 +77,7 @@
             {%- for val in size_option.values -%}
               <button
                 type="button"
-                class="wtf-chip{% if forloop.first %} wtf-chip--active{% endif %}"
+                class="wtf-chip wtf-chip--size{% if forloop.first %} wtf-chip--active{% endif %}"
                 data-option="{{ size_option.name }}"
                 data-value="{{ val }}"
                 aria-label="Size {{ val }}"
@@ -79,37 +93,97 @@
         </div>
       </section>
 
-      {%- comment -%} Flavor (Line Item Property) {%- endcomment -%}
-      {%- assign flavors = product.metafields.wtf.flavors -%}
-      {%- assign fallback_flavors = 'Mango,Strawberry,Blue Razz,Watermelon,Pineapple,Peach,Lemon,Lime,Orange,Grape'
+      {%- comment -%}
+        Flavor (Line Item Properties)
+        - Renders Sugar-Free and Regular groups (normalized names).
+        - Saves properties[Flavor] and properties[Flavor Category].
+      {%- endcomment -%}
+      {%- assign sugar_free = '
+      Blackberry,
+      White Chocolate,
+      Pumpkin Spice,
+      Lemon Spritz,
+      Vanilla,
+      Maple Bourbon Pecan,
+      Peach,
+      Simple Syrup,
+      Cosmopolitan,
+      Raspberry Lemonade,
+      Pomegranate,
+      Blueberry Lavender,
+      Salted Caramel,
+      Rose,
+      Mexican Chocolate
+      '
+        | strip
+        | newline_to_br
+        | replace: '<br />', ','
         | split: ','
+        | map: 'strip'
+      -%}
+
+      {%- assign regular = '
+      Caramel Apple Butter,
+      Lime,
+      Grenadine,
+      Dark Chocolate,
+      Margarita,
+      Brown Sugar,
+      Salted Chocolate Caramel,
+      Hibiscus Passion Fruit,
+      Blueberry,
+      Coconut Caramel (Samoa Cookie),
+      Cotton Candy
+      '
+        | strip
+        | newline_to_br
+        | replace: '<br />', ','
+        | split: ','
+        | map: 'strip'
       -%}
 
       <section style="margin-bottom:14px;">
         <label style="display:block;font-weight:700;margin-bottom:8px;">Flavor</label>
+
+        <!-- Hidden inputs saved to the cart -->
         <input type="hidden" name="properties[Flavor]" id="kratomFlavor">
-        <div id="kratom-flavor-chips" style="display:flex;flex-wrap:wrap;gap:8px;">
-          {%- if flavors and flavors.size > 0 -%}
-            {%- for f in flavors -%}
+        <input type="hidden" name="properties[Flavor Category]" id="kratomFlavorCategory">
+
+        <div id="kratom-flavor-wrapper">
+          <div style="font-weight:600;margin:.5rem 0 .25rem;">Sugar-Free Syrups</div>
+          <div class="kratom-chip-row" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+            {%- for f in sugar_free -%}
               <button
                 type="button"
-                class="wtf-chip{% if forloop.first %} wtf-chip--active{% endif %}"
-                data-flavor="{{ f | strip }}"
+                class="wtf-chip wtf-chip--flavor"
+                data-flavor="{{ f | escape }}"
+                data-group="Sugar Free"
               >
-                {{ f | strip }}
+                {{ f }}
               </button>
             {%- endfor -%}
-          {%- else -%}
-            {%- for f in fallback_flavors -%}
+          </div>
+
+          <div style="font-weight:600;margin:.5rem 0 .25rem;">Regular Sugar Syrups</div>
+          <div class="kratom-chip-row" style="display:flex;flex-wrap:wrap;gap:8px;">
+            {%- for f in regular -%}
               <button
                 type="button"
-                class="wtf-chip{% if forloop.first %} wtf-chip--active{% endif %}"
-                data-flavor="{{ f | strip }}"
+                class="wtf-chip wtf-chip--flavor"
+                data-flavor="{{ f | escape }}"
+                data-group="Regular"
               >
-                {{ f | strip }}
+                {{ f }}
               </button>
             {%- endfor -%}
-          {%- endif -%}
+          </div>
+        </div>
+
+        <div
+          id="kratom-gallon-note"
+          style="display:none;margin:.5rem 0;font-size:.9rem;background:#fff3cd;border:1px solid #ffeaa7;border-radius:8px;padding:10px;"
+        >
+          For <strong>Gallon</strong> Kratom teas, please discuss flavor preferences with staff.
         </div>
       </section>
 
@@ -150,30 +224,65 @@
     </form>
   </main>
 
-  {%- comment -%} Tiny helper for LIP flavor chips + respond to variant updates (price/img) {%- endcomment -%}
+  {%- comment -%} Helpers: flavor selection, Gallon rule, price updates {%- endcomment -%}
   <script>
     (function () {
-      // Flavor chips → properties[Flavor]
-      const chipsWrap = document.getElementById('kratom-flavor-chips');
-      const input = document.getElementById('kratomFlavor');
-      function setFlavor(val) {
-        if (!input) return;
-        input.value = val;
-        chipsWrap.querySelectorAll('.wtf-chip[data-flavor]').forEach((b) => {
-          b.classList.toggle('wtf-chip--active', b.getAttribute('data-flavor') === val);
-          b.setAttribute('aria-checked', b.classList.contains('wtf-chip--active') ? 'true' : 'false');
+      // ----- Flavor chips → properties[Flavor] + properties[Flavor Category]
+      var wrap = document.getElementById('kratom-flavor-wrapper');
+      var flavorInput = document.getElementById('kratomFlavor');
+      var catInput = document.getElementById('kratomFlavorCategory');
+
+      function setFlavor(btn) {
+        if (!btn || !flavorInput || !catInput) return;
+        flavorInput.value = btn.getAttribute('data-flavor') || '';
+        catInput.value = btn.getAttribute('data-group') || '';
+        wrap.querySelectorAll('.wtf-chip--flavor').forEach(function (b) {
+          var active = b === btn;
+          b.classList.toggle('wtf-chip--active', active);
+          b.setAttribute('aria-checked', active ? 'true' : 'false');
+        });
+        document.dispatchEvent(
+          new CustomEvent('wtf:flavor:selected', {
+            detail: { flavor: flavorInput.value, category: catInput.value },
+          })
+        );
+      }
+
+      if (wrap) {
+        var first = wrap.querySelector('.wtf-chip--flavor');
+        if (first) setFlavor(first);
+        wrap.addEventListener('click', function (e) {
+          var btn = e.target.closest('.wtf-chip--flavor');
+          if (btn) setFlavor(btn);
         });
       }
-      if (chipsWrap) {
-        const first = chipsWrap.querySelector('.wtf-chip[data-flavor]');
-        if (first) setFlavor(first.getAttribute('data-flavor'));
-        chipsWrap.addEventListener('click', (e) => {
-          const b = e.target.closest('.wtf-chip[data-flavor]');
-          if (!b) return;
-          setFlavor(b.getAttribute('data-flavor'));
-        });
+
+      // ----- Gallon rule (hide flavors + show note)
+      var sizeButtons = document.querySelectorAll('.wtf-chip--size');
+      var note = document.getElementById('kratom-gallon-note');
+      function applyGallonRule(sizeLabel) {
+        var isGallon = (sizeLabel || '').toLowerCase() === 'gallon';
+        if (wrap) wrap.style.display = isGallon ? 'none' : '';
+        if (note) note.style.display = isGallon ? '' : 'none';
+        if (isGallon && flavorInput && catInput) {
+          flavorInput.value = '';
+          catInput.value = '';
+          wrap &&
+            wrap.querySelectorAll('.wtf-chip--flavor').forEach(function (b) {
+              b.classList.remove('wtf-chip--active');
+              b.setAttribute('aria-checked', 'false');
+            });
+        }
       }
-      // Update UI on variant change (from wtf-variants.js)
+      sizeButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          applyGallonRule((btn.textContent || '').trim());
+        });
+      });
+      var selectedSize = document.querySelector('.wtf-chip--size.wtf-chip--active');
+      applyGallonRule(selectedSize ? selectedSize.textContent.trim() : '');
+
+      // ----- Update price on variant change (from wtf-variants.js)
       document.addEventListener('wtf:variant:change', function (e) {
         var v = e.detail && e.detail.variant;
         if (!v) return;
@@ -183,4 +292,10 @@
       });
     })();
   </script>
+
+  <style>
+    .wtf-chip--flavor.wtf-chip--active {
+      outline: 2px solid var(--color-accent, #ff6a00);
+    }
+  </style>
 {%- endif -%}

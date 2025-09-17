@@ -1,158 +1,132 @@
 {%- comment -%}
-  Renders flavor chips + pump counters and maintains:
-    - window.WTF_FLAVORS_STRING (e.g., "Mango:2 | Peach:1 | Lime:1")
-  Requires:
-    - 'flavors' param (Liquid array) or falls back to window.WTF_FLAVORS
-    - window.PUMP_LIMIT_BY_SIZE and current Size state (from the page/snippet)
+  Reusable grouped flavor UI.
+  Params:
+    - scope: "kratom" | "kava" | "thc" (used only for IDs; lists below are editable)
+    - id_prefix: optional, defaults to scope. Keeps IDs unique per page.
+  Saves:
+    properties[Flavor], properties[Flavor Category]
+  Classes:
+    .wtf-chip--flavor (selected gets .wtf-chip--active)
 {%- endcomment -%}
 
-{%- assign _title = title | default: 'Choose Your Flavor(s)' -%}
-{%- assign _option_name = option_name | default: 'Flavor' -%}
-{%- assign _flavors = flavors | default: wtfKratomFlavors -%}
+{%- assign scope = scope | default: 'kratom' -%}
+{%- assign id_prefix = id_prefix | default: scope -%}
 
-<div class="wtf-flavors">
-  <div class="wtf-label" style="font-weight:800;margin-bottom:8px">{{ _title }}</div>
+{%- comment -%} Default lists (edit here if you like). You can later move to metafields. {%- endcomment -%}
+{%- assign sugar_free = '
+Blackberry,
+White Chocolate,
+Pumpkin Spice,
+Lemon Spritz,
+Vanilla,
+Maple Bourbon Pecan,
+Peach,
+Simple Syrup,
+Cosmopolitan,
+Raspberry Lemonade,
+Pomegranate,
+Blueberry Lavender,
+Salted Caramel,
+Rose,
+Mexican Chocolate
+'
+  | strip
+  | newline_to_br
+  | replace: '<br />', ','
+  | split: ','
+  | map: 'strip'
+-%}
 
-  <div class="wtf-row" style="display:flex;flex-wrap:wrap;gap:8px;">
-    {%- for f in _flavors -%}
-      <div
-        class="wtf-flavor-pill"
-        data-flavor="{{ f | escape }}"
-        style="display:flex;align-items:center;gap:6px;border:1px solid #ddd;border-radius:999px;padding:8px 10px;"
-      >
+{%- assign regular = '
+Caramel Apple Butter,
+Lime,
+Grenadine,
+Dark Chocolate,
+Margarita,
+Brown Sugar,
+Salted Chocolate Caramel,
+Hibiscus Passion Fruit,
+Blueberry,
+Coconut Caramel (Samoa Cookie),
+Cotton Candy
+'
+  | strip
+  | newline_to_br
+  | replace: '<br />', ','
+  | split: ','
+  | map: 'strip'
+-%}
+
+<section style="margin-bottom:14px;">
+  <label style="display:block;font-weight:700;margin-bottom:8px;">Flavor</label>
+
+  <!-- Hidden inputs saved to cart -->
+  <input type="hidden" name="properties[Flavor]" id="{{ id_prefix }}Flavor">
+  <input type="hidden" name="properties[Flavor Category]" id="{{ id_prefix }}FlavorCategory">
+
+  <div id="{{ id_prefix }}-flavor-wrapper">
+    <div style="font-weight:600;margin:.5rem 0 .25rem;">Sugar-Free Syrups</div>
+    <div class="{{ id_prefix }}-chip-row" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+      {%- for f in sugar_free -%}
         <button
           type="button"
-          class="wtf-chip"
-          data-option="{{ _option_name }}"
-          data-value="{{ f | escape }}"
-          aria-pressed="false"
-          style="background:#fff;border:0;padding:0 2px;cursor:pointer;font-weight:600;"
+          class="wtf-chip wtf-chip--flavor"
+          data-flavor="{{ f | escape }}"
+          data-group="Sugar Free"
         >
           {{ f }}
         </button>
-        <div class="wtf-pumps" style="display:flex;align-items:center;gap:6px;">
-          <button
-            type="button"
-            class="wtf-minus"
-            aria-label="minus"
-            style="width:28px;height:28px;border:1px solid #ddd;border-radius:8px;cursor:pointer;"
-          >
-            –
-          </button>
-          <input
-            type="text"
-            inputmode="numeric"
-            class="wtf-count"
-            value="0"
-            aria-label="{{ f }} pumps"
-            style="width:36px;height:28px;text-align:center;border:1px solid #ddd;border-radius:8px;"
-          >
-          <button
-            type="button"
-            class="wtf-plus"
-            aria-label="plus"
-            style="width:28px;height:28px;border:1px solid #ddd;border-radius:8px;cursor:pointer;"
-          >
-            +
-          </button>
-        </div>
-      </div>
-    {%- endfor -%}
+      {%- endfor -%}
+    </div>
+
+    <div style="font-weight:600;margin:.5rem 0 .25rem;">Regular Sugar Syrups</div>
+    <div class="{{ id_prefix }}-chip-row" style="display:flex;flex-wrap:wrap;gap:8px;">
+      {%- for f in regular -%}
+        <button
+          type="button"
+          class="wtf-chip wtf-chip--flavor"
+          data-flavor="{{ f | escape }}"
+          data-group="Regular"
+        >
+          {{ f }}
+        </button>
+      {%- endfor -%}
+    </div>
   </div>
-</div>
+</section>
+
+<style>
+  .wtf-chip--flavor.wtf-chip--active {
+    outline: 2px solid var(--color-accent, #ff6a00);
+  }
+</style>
 
 <script>
   (function () {
-    // guard: only run once
-    if (window.__WTF_FLAVOR_WIRED__) return;
-    window.__WTF_FLAVOR_WIRED__ = true;
+    var wrap = document.getElementById('{{ id_prefix }}-flavor-wrapper');
+    var flavorInput = document.getElementById('{{ id_prefix }}Flavor');
+    var catInput = document.getElementById('{{ id_prefix }}FlavorCategory');
+    if (!wrap || !flavorInput || !catInput) return;
 
-    const PUMPS = {};
-    const $ = (s, c) => (c || document).querySelector(s);
-    const $$ = (s, c) => Array.from((c || document).querySelectorAll(s));
-
-    // Pump limit helper (expects window.PUMP_LIMIT_BY_SIZE + a selected Size chip)
-    function currentSize() {
-      const pressed = document.querySelector('[data-option="Size"][aria-pressed="true"]');
-      return pressed ? pressed.getAttribute('data-value') : 'Medium';
-    }
-    function pumpLimit() {
-      const size = currentSize();
-      const limits = window.PUMP_LIMIT_BY_SIZE || {};
-      return limits[size] || 0;
-    }
-    function totalPumps() {
-      return Object.values(PUMPS).reduce((a, b) => a + (parseInt(b, 10) || 0), 0);
+    function setFlavor(btn) {
+      var val = btn.getAttribute('data-flavor') || '';
+      var grp = btn.getAttribute('data-group') || '';
+      flavorInput.value = val;
+      catInput.value = grp;
+      wrap.querySelectorAll('.wtf-chip--flavor').forEach(function (b) {
+        var active = b === btn;
+        b.classList.toggle('wtf-chip--active', active);
+        b.setAttribute('aria-checked', active ? 'true' : 'false');
+      });
+      document.dispatchEvent(new CustomEvent('wtf:flavor:selected', { detail: { flavor: val, category: grp } }));
     }
 
-    function setCount(flavor, n) {
-      PUMPS[flavor] = Math.max(0, n | 0);
-      syncString();
-    }
+    var first = wrap.querySelector('.wtf-chip--flavor');
+    if (first) setFlavor(first);
 
-    function syncString() {
-      const parts = Object.keys(PUMPS)
-        .filter((k) => (PUMPS[k] | 0) > 0)
-        .map((k) => `${k}:${PUMPS[k] | 0}`);
-      window.WTF_FLAVORS_STRING = parts.join(' | ');
-      const hint = document.getElementById('wtf-pump-hint');
-      if (hint) {
-        hint.textContent = `Pump limit: ${pumpLimit()} total. Used: ${totalPumps()}`;
-      }
-    }
-
-    // Wire +/- and prevent exceeding the limit
-    document.addEventListener('click', (e) => {
-      const minus = e.target.closest('.wtf-minus');
-      const plus = e.target.closest('.wtf-plus');
-      const chip = e.target.closest('[data-option="Flavor"]');
-
-      // Toggle chip pressed state (visual)
-      if (chip) {
-        const on = chip.getAttribute('aria-pressed') !== 'true';
-        chip.setAttribute('aria-pressed', on ? 'true' : 'false');
-        // no-op for pumps; pumps control counts
-      }
-
-      const pill = e.target.closest('.wtf-flavor-pill');
-      if (!pill) return;
-      const flavor = pill.getAttribute('data-flavor');
-      const input = pill.querySelector('.wtf-count');
-      let n = parseInt(input.value || '0', 10) || 0;
-
-      if (minus) {
-        n = Math.max(0, n - 1);
-      }
-      if (plus) {
-        const lim = pumpLimit();
-        if (totalPumps() >= lim) {
-          return;
-        }
-        n = n + 1;
-      }
-      input.value = n;
-      setCount(flavor, n);
+    wrap.addEventListener('click', function (e) {
+      var btn = e.target.closest('.wtf-chip--flavor');
+      if (btn) setFlavor(btn);
     });
-
-    // Recalculate when Size changes (limit changes)
-    document.addEventListener('click', (e) => {
-      const sizeBtn = e.target.closest('[data-option="Size"]');
-      if (!sizeBtn) return;
-      // If over new limit, gently trim from the end of list
-      const lim = pumpLimit();
-      while (totalPumps() > lim) {
-        const k = Object.keys(PUMPS)
-          .reverse()
-          .find((f) => (PUMPS[f] | 0) > 0);
-        if (!k) break;
-        PUMPS[k] = (PUMPS[k] | 0) - 1;
-        const pill = document.querySelector(`.wtf-flavor-pill[data-flavor="${CSS.escape(k)}"] .wtf-count`);
-        if (pill) pill.value = PUMPS[k] | 0;
-      }
-      syncString();
-    });
-
-    // Initialize empty
-    syncString();
   })();
 </script>
