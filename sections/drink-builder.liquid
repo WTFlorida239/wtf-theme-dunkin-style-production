@@ -1,0 +1,479 @@
+{% comment %}
+  Section: Drink Builder (WTF Dunkin-style)
+  Cards:
+    1) Kratom Tea (strains incl. Half & Half), Ice, Flavor, Creamer, Booster
+    2) Kava (single strain for now), Ice, Flavor, Creamer, Booster
+    3) THC Drinks (rotating flavors via blocks)
+    4) Draft Drinks (rotating flavors via blocks)
+    5) Cans (no special options, just ensure add-to-cart)
+  Notes:
+    - Uses line item properties so all choices appear in cart/checkout.
+    - No metafields required. All options are configured in this section’s settings.
+    - For Kratom + Kava, common flavors list is shared (editable here).
+    - For THC and Drafts, use blocks to manage rotating flavors (reorder to change top 4).
+{% endcomment %}
+
+{% assign _common_flavors = section.settings.common_flavors | strip | newline_to_br | split: '<br />' %}
+{% assign _creamers = section.settings.creamers | strip | newline_to_br | split: '<br />' %}
+{% assign _boosters = section.settings.boosters | strip | newline_to_br | split: '<br />' %}
+{% assign _ice_levels = section.settings.ice_levels | strip | newline_to_br | split: '<br />' %}
+
+<style>
+  .db-wrap { display:grid; gap: var(--sp, 1rem); }
+  .db-cards { display:grid; gap: var(--sp, 1.25rem); grid-template-columns: 1fr; }
+  .db-card { border:1px solid rgba(0,0,0,.12); border-radius: 16px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+  .db-card h3 { margin: 0 0 8px; }
+  .db-row { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; margin: .5rem 0 0; }
+  .db-label { font-weight:600; min-width: 90px; }
+  .chip { position:relative; display:inline-flex; align-items:center; justify-content:center; padding:.5rem .75rem; border:1px solid rgba(0,0,0,.15); border-radius:999px; cursor:pointer; user-select:none; }
+  .chip input { position:absolute; inset:0; opacity:0; }
+  .chip[aria-checked="true"] { border-color: var(--accent, #111); box-shadow: inset 0 0 0 2px var(--accent, #111); }
+  .db-actions { display:flex; gap:.75rem; align-items:center; margin-top: .75rem; }
+  .db-price { font-weight:700; }
+  .db-note { font-size:.9rem; color:rgba(0,0,0,.6); }
+  .is-hidden { display:none !important; }
+  .db-props { margin:.5rem 0 0; font-size:.9rem; color:rgba(0,0,0,.7); }
+  .db-select { min-width: 220px; }
+</style>
+
+<div class="db-wrap" data-db>
+  <div class="db-cards">
+
+    {%- comment -%} ---------- Card 1: KRATOM TEAS ---------- {%- endcomment -%}
+    <div class="db-card" data-card="kratom">
+      <h3>Kratom Teas</h3>
+      {% assign p = section.settings.kratom_product %}
+      {% if p %}
+      <form method="post" action="/cart/add" data-form="kratom" onsubmit="return window.DrinkBuilder?.beforeSubmit(event)">
+        <input type="hidden" name="id" value="{{ p.variants.first.id }}">
+        <input type="hidden" name="properties[Drink Type]" value="Kratom Tea">
+
+        {%- assign strains = "Red,Green,White,Yellow" | split: "," -%}
+
+        <div class="db-row">
+          <span class="db-label">Strain</span>
+
+          <label class="chip" role="radio" aria-checked="true">
+            <input type="radio" name="kratom_strain_mode" value="single" checked>
+            Single
+          </label>
+          <label class="chip" role="radio" aria-checked="false">
+            <input type="radio" name="kratom_strain_mode" value="half">
+            Half &amp; Half
+          </label>
+        </div>
+
+        <div class="db-row" data-kratom="single">
+          {% for s in strains %}
+            <label class="chip" role="radio" aria-checked="{{ forloop.first }}">
+              <input type="radio" name="kratom_single_strain" value="{{ s | strip }}" {% if forloop.first %}checked{% endif %}>
+              {{ s | strip }}
+            </label>
+          {% endfor %}
+        </div>
+
+        <div class="db-row is-hidden" data-kratom="half">
+          <span class="db-label">Pick 2</span>
+          <select class="db-select" name="kratom_half_a" aria-label="Half #1">
+            {% for s in strains %}<option value="{{ s | strip }}">{{ s | strip }}</option>{% endfor %}
+          </select>
+          <select class="db-select" name="kratom_half_b" aria-label="Half #2">
+            {% for s in strains %}<option value="{{ s | strip }}" {% if s == 'White' %}selected{% endif %}>{{ s | strip }}</option>{% endfor %}
+          </select>
+        </div>
+
+        <input type="hidden" name="properties[Strain]" value="Red" data-prop="kratom-strain">
+
+        <div class="db-row">
+          <span class="db-label">Ice</span>
+          {% for v in _ice_levels %}
+            {% assign checked = forloop.first %}
+            <label class="chip" role="radio" aria-checked="{{ checked }}">
+              <input type="radio" name="properties[Ice]" value="{{ v | strip }}" {% if checked %}checked{% endif %}>
+              {{ v | strip }}
+            </label>
+          {% endfor %}
+        </div>
+
+        <div class="db-row">
+          <span class="db-label">Flavor</span>
+          {% for v in _common_flavors %}
+            <label class="chip" role="radio" aria-checked="{{ forloop.first }}">
+              <input type="radio" name="properties[Flavor]" value="{{ v | strip }}" {% if forloop.first %}checked{% endif %}>
+              {{ v | strip }}
+            </label>
+          {% endfor %}
+        </div>
+
+        <div class="db-row">
+          <span class="db-label">Creamer</span>
+          {% for v in _creamers %}
+            <label class="chip" role="radio" aria-checked="{{ forloop.first }}">
+              <input type="radio" name="properties[Creamer]" value="{{ v | strip }}" {% if forloop.first %}checked{% endif %}>
+              {{ v | strip }}
+            </label>
+          {% endfor %}
+        </div>
+
+        <div class="db-row">
+          <span class="db-label">Booster</span>
+          {% for v in _boosters %}
+            <label class="chip" role="radio" aria-checked="{{ forloop.first }}">
+              <input type="radio" name="properties[Booster]" value="{{ v | strip }}" {% if forloop.first %}checked{% endif %}>
+              {{ v | strip }}
+            </label>
+          {% endfor %}
+        </div>
+
+        {% if p.variants.size > 1 %}
+          <div class="db-row">
+            <span class="db-label">Variant</span>
+            <select name="id" class="db-select" aria-label="Variant">
+              {% for v in p.variants %}
+                <option value="{{ v.id }}" {% if v.available and forloop.first %}selected{% endif %} {% unless v.available %}disabled{% endunless %}>
+                  {{ v.title }} {% unless v.available %}(Sold out){% endunless %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endif %}
+
+        <div class="db-actions">
+          <span class="db-price">{{ p.price | money }}</span>
+          <button class="button" type="submit">{% if section.settings.button_label != blank %}{{ section.settings.button_label }}{% else %}Add to cart{% endif %}</button>
+        </div>
+
+        <div class="db-props db-note" aria-live="polite"></div>
+      </form>
+      {% else %}
+        <p class="db-note">Select the Kratom product in the section settings to enable ordering.</p>
+      {% endif %}
+    </div>
+
+    {%- comment -%} ---------- Card 2: KAVA ---------- {%- endcomment -%}
+    <div class="db-card" data-card="kava">
+      <h3>Kava</h3>
+      {% assign p2 = section.settings.kava_product %}
+      {% if p2 %}
+      <form method="post" action="/cart/add" data-form="kava" onsubmit="return window.DrinkBuilder?.beforeSubmit(event)">
+        <input type="hidden" name="id" value="{{ p2.variants.first.id }}">
+        <input type="hidden" name="properties[Drink Type]" value="Kava">
+
+        {% assign kava_strains = section.settings.kava_strains | strip | newline_to_br | split: '<br />' %}
+        {% if kava_strains == blank %}{% assign kava_strains = 'Classic' | split: ',' %}{% endif %}
+
+        <div class="db-row">
+          <span class="db-label">Strain</span>
+          {% for s in kava_strains %}
+            <label class="chip" role="radio" aria-checked="{{ forloop.first }}">
+              <input type="radio" name="properties[Strain]" value="{{ s | strip }}" {% if forloop.first %}checked{% endif %}>
+              {{ s | strip }}
+            </label>
+          {% endfor %}
+        </div>
+
+        <div class="db-row">
+          <span class="db-label">Ice</span>
+          {% for v in _ice_levels %}
+            <label class="chip" role="radio" aria-checked="{{ forloop.first }}">
+              <input type="radio" name="properties[Ice]" value="{{ v | strip }}" {% if forloop.first %}checked{% endif %}>
+              {{ v | strip }}
+            </label>
+          {% endfor %}
+        </div>
+
+        <div class="db-row">
+          <span class="db-label">Flavor</span>
+          {% for v in _common_flavors %}
+            <label class="chip" role="radio" aria-checked="{{ forloop.first }}">
+              <input type="radio" name="properties[Flavor]" value="{{ v | strip }}" {% if forloop.first %}checked{% endif %}>
+              {{ v | strip }}
+            </label>
+          {% endfor %}
+        </div>
+
+        <div class="db-row">
+          <span class="db-label">Creamer</span>
+          {% for v in _creamers %}
+            <label class="chip" role="radio" aria-checked="{{ forloop.first }}">
+              <input type="radio" name="properties[Creamer]" value="{{ v | strip }}" {% if forloop.first %}checked{% endif %}>
+              {{ v | strip }}
+            </label>
+          {% endfor %}
+        </div>
+
+        <div class="db-row">
+          <span class="db-label">Booster</span>
+          {% for v in _boosters %}
+            <label class="chip" role="radio" aria-checked="{{ forloop.first }}">
+              <input type="radio" name="properties[Booster]" value="{{ v | strip }}" {% if forloop.first %}checked{% endif %}>
+              {{ v | strip }}
+            </label>
+          {% endfor %}
+        </div>
+
+        {% if p2.variants.size > 1 %}
+          <div class="db-row">
+            <span class="db-label">Variant</span>
+            <select name="id" class="db-select" aria-label="Variant">
+              {% for v in p2.variants %}
+                <option value="{{ v.id }}" {% if v.available and forloop.first %}selected{% endif %} {% unless v.available %}disabled{% endunless %}>
+                  {{ v.title }} {% unless v.available %}(Sold out){% endunless %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endif %}
+
+        <div class="db-actions">
+          <span class="db-price">{{ p2.price | money }}</span>
+          <button class="button" type="submit">{% if section.settings.button_label != blank %}{{ section.settings.button_label }}{% else %}Add to cart{% endif %}</button>
+        </div>
+
+        <div class="db-props db-note" aria-live="polite"></div>
+      </form>
+      {% else %}
+        <p class="db-note">Select the Kava product in the section settings to enable ordering.</p>
+      {% endif %}
+    </div>
+
+    {%- comment -%} ---------- Card 3: THC DRINKS ---------- {%- endcomment -%}
+    <div class="db-card" data-card="thc">
+      <h3>THC Drinks</h3>
+      {% assign p3 = section.settings.thc_product %}
+      {% if p3 %}
+      <form method="post" action="/cart/add" data-form="thc" onsubmit="return window.DrinkBuilder?.beforeSubmit(event)">
+        <input type="hidden" name="id" value="{{ p3.variants.first.id }}">
+        <input type="hidden" name="properties[Drink Type]" value="THC Drink">
+
+        {% comment %} Render first 4 flavor blocks {% endcomment %}
+        {% assign thc_blocks = section.blocks | where: 'type', 'thc_flavor' %}
+        <div class="db-row">
+          <span class="db-label">Flavor</span>
+          {% for b in thc_blocks limit: 4 %}
+            {% assign name = b.settings.name | default: 'Flavor' %}
+            <label class="chip" role="radio" aria-checked="{{ forloop.first }}">
+              <input type="radio" name="properties[Flavor]" value="{{ name | strip }}" {% if forloop.first %}checked{% endif %}>
+              {{ name | strip }}
+            </label>
+          {% endfor %}
+        </div>
+
+        {% if p3.variants.size > 1 %}
+          <div class="db-row">
+            <span class="db-label">Variant</span>
+            <select name="id" class="db-select" aria-label="Variant">
+              {% for v in p3.variants %}
+                <option value="{{ v.id }}" {% if v.available and forloop.first %}selected{% endif %} {% unless v.available %}disabled{% endunless %}>
+                  {{ v.title }} {% unless v.available %}(Sold out){% endunless %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endif %}
+
+        <div class="db-actions">
+          <span class="db-price">{{ p3.price | money }}</span>
+          <button class="button" type="submit">{% if section.settings.button_label != blank %}{{ section.settings.button_label }}{% else %}Add to cart{% endif %}</button>
+        </div>
+        <div class="db-props db-note" aria-live="polite"></div>
+      </form>
+      {% else %}
+        <p class="db-note">Select the THC product in the section settings to enable ordering. Add/rename flavors by adding THC Flavor blocks (first 4 show).</p>
+      {% endif %}
+    </div>
+
+    {%- comment -%} ---------- Card 4: DRAFT DRINKS ---------- {%- endcomment -%}
+    <div class="db-card" data-card="drafts">
+      <h3>Draft Drinks</h3>
+      {% assign p4 = section.settings.draft_product %}
+      {% if p4 %}
+      <form method="post" action="/cart/add" data-form="drafts" onsubmit="return window.DrinkBuilder?.beforeSubmit(event)">
+        <input type="hidden" name="id" value="{{ p4.variants.first.id }}">
+        <input type="hidden" name="properties[Drink Type]" value="Draft Drink">
+
+        {% assign draft_blocks = section.blocks | where: 'type', 'draft_flavor' %}
+        <div class="db-row">
+          <span class="db-label">Flavor</span>
+          {% for b in draft_blocks %}
+            {% assign name = b.settings.name | default: 'Flavor' %}
+            <label class="chip" role="radio" aria-checked="{{ forloop.first }}">
+              <input type="radio" name="properties[Flavor]" value="{{ name | strip }}" {% if forloop.first %}checked{% endif %}>
+              {{ name | strip }}
+            </label>
+          {% endfor %}
+        </div>
+
+        {% if p4.variants.size > 1 %}
+          <div class="db-row">
+            <span class="db-label">Variant</span>
+            <select name="id" class="db-select" aria-label="Variant">
+              {% for v in p4.variants %}
+                <option value="{{ v.id }}" {% if v.available and forloop.first %}selected{% endif %} {% unless v.available %}disabled{% endunless %}>
+                  {{ v.title }} {% unless v.available %}(Sold out){% endunless %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endif %}
+
+        <div class="db-actions">
+          <span class="db-price">{{ p4.price | money }}</span>
+          <button class="button" type="submit">{% if section.settings.button_label != blank %}{{ section.settings.button_label }}{% else %}Add to cart{% endif %}</button>
+        </div>
+        <div class="db-props db-note" aria-live="polite"></div>
+      </form>
+      {% else %}
+        <p class="db-note">Select the Draft product in the section settings to enable ordering. Manage flavors as Draft Flavor blocks.</p>
+      {% endif %}
+    </div>
+
+    {%- comment -%} ---------- Card 5: CANS ---------- {%- endcomment -%}
+    <div class="db-card" data-card="cans">
+      <h3>Cans</h3>
+      {% assign p5 = section.settings.cans_product %}
+      {% if p5 %}
+      <form method="post" action="/cart/add" data-form="cans" onsubmit="return window.DrinkBuilder?.beforeSubmit(event)">
+        <input type="hidden" name="id" value="{{ p5.variants.first.id }}">
+        <input type="hidden" name="properties[Drink Type]" value="Canned Drink">
+
+        {% if p5.variants.size > 1 %}
+          <div class="db-row">
+            <span class="db-label">Variant</span>
+            <select name="id" class="db-select" aria-label="Variant">
+              {% for v in p5.variants %}
+                <option value="{{ v.id }}" {% if v.available and forloop.first %}selected{% endif %} {% unless v.available %}disabled{% endunless %}>
+                  {{ v.title }} {% unless v.available %}(Sold out){% endunless %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endif %}
+
+        <div class="db-actions">
+          <span class="db-price">{{ p5.price | money }}</span>
+          <button class="button" type="submit">{% if section.settings.button_label != blank %}{{ section.settings.button_label }}{% else %}Add to cart{% endif %}</button>
+        </div>
+        <div class="db-props db-note" aria-live="polite"></div>
+      </form>
+      {% else %}
+        <p class="db-note">Select the Cans product in the section settings to enable ordering.</p>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<script>
+window.DrinkBuilder = window.DrinkBuilder || (function(){
+  function setChipState(group){
+    const chips = group.querySelectorAll('.chip input[type="radio"]');
+    chips.forEach(inp => {
+      inp.closest('.chip').setAttribute('aria-checked', inp.checked ? 'true' : 'false');
+    });
+  }
+
+  function updateKratomStrain(form){
+    const mode = form.querySelector('input[name="kratom_strain_mode"]:checked')?.value || 'single';
+    const singleWrap = form.querySelector('[data-kratom="single"]');
+    const halfWrap = form.querySelector('[data-kratom="half"]');
+    const prop = form.querySelector('[data-prop="kratom-strain"]');
+
+    if(mode === 'half'){
+      singleWrap?.classList.add('is-hidden');
+      halfWrap?.classList.remove('is-hidden');
+      const a = form.kratom_half_a?.value;
+      const b = form.kratom_half_b?.value;
+      if(prop) prop.value = `Half: ${a} + ${b}`;
+    } else {
+      singleWrap?.classList.remove('is-hidden');
+      halfWrap?.classList.add('is-hidden');
+      const sel = form.querySelector('input[name="kratom_single_strain"]:checked')?.value || 'Red';
+      if(prop) prop.value = sel;
+    }
+  }
+
+  function updateLiveProps(form){
+    const out = form.querySelector('.db-props');
+    if(!out) return;
+    const props = Array.from(new FormData(form).entries())
+      .filter(([k,v]) => k.startsWith('properties[') && v && !k.includes('Drink Type'));
+    const txt = props.map(([k,v]) => {
+      const label = k.replace(/^properties\[/,'').replace(/\]$/,'');
+      return `${label}: ${v}`;
+    }).join(' • ');
+    out.textContent = txt;
+  }
+
+  function wireForm(form){
+    // Initialize chip ARIA states
+    form.querySelectorAll('.db-row').forEach(setChipState);
+    form.addEventListener('change', e => {
+      const tgt = e.target;
+      if(tgt.matches('input[type="radio"]')){
+        setChipState(tgt.closest('.db-row'));
+      }
+      if(form.dataset.form === 'kratom' && (tgt.name === 'kratom_strain_mode' || tgt.name === 'kratom_single_strain' || tgt.name === 'kratom_half_a' || tgt.name === 'kratom_half_b')){
+        updateKratomStrain(form);
+      }
+      updateLiveProps(form);
+    });
+
+    // Initial state
+    if(form.dataset.form === 'kratom'){ updateKratomStrain(form); }
+    updateLiveProps(form);
+  }
+
+  function beforeSubmit(e){
+    // Add validation here if you want (e.g., ensure a flavor was selected)
+    return true;
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('[data-db] form').forEach(wireForm);
+  });
+
+  return { beforeSubmit };
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Drink Builder (Cards)",
+  "settings": [
+    { "type": "header", "content": "Shared options" },
+    { "type": "textarea", "id": "common_flavors", "label": "Common flavors (one per line)", "default": "Vanilla\nCaramel\nHazelnut\nMocha\nStrawberry\nMango" },
+    { "type": "textarea", "id": "creamers", "label": "Creamers (one per line)", "default": "Whole Milk\nOat Milk\nAlmond Milk\nCoconut Milk\nHalf & Half" },
+    { "type": "textarea", "id": "boosters", "label": "Boosters (one per line)", "default": "None\nFocus\nEnergy\nCalm" },
+    { "type": "textarea", "id": "ice_levels", "label": "Ice levels (one per line)", "default": "No Ice\nLight Ice\nRegular\nExtra Ice" },
+
+    { "type": "text", "id": "button_label", "label": "Add to Cart button label", "default": "Add to cart" },
+
+    { "type": "header", "content": "Kratom" },
+    { "type": "product", "id": "kratom_product", "label": "Kratom product" },
+
+    { "type": "header", "content": "Kava" },
+    { "type": "product", "id": "kava_product", "label": "Kava product" },
+    { "type": "textarea", "id": "kava_strains", "label": "Kava strains (one per line)", "default": "Classic" },
+
+    { "type": "header", "content": "THC Drinks" },
+    { "type": "product", "id": "thc_product", "label": "THC base product" },
+
+    { "type": "header", "content": "Draft Drinks" },
+    { "type": "product", "id": "draft_product", "label": "Draft base product" },
+
+    { "type": "header", "content": "Cans" },
+    { "type": "product", "id": "cans_product", "label": "Cans product" }
+  ],
+  "blocks": [
+    { "type": "thc_flavor", "name": "THC Flavor", "settings": [{ "type": "text", "id": "name", "label": "Flavor name" }]},
+    { "type": "draft_flavor", "name": "Draft Flavor", "settings": [{ "type": "text", "id": "name", "label": "Flavor name" }]}
+  ],
+  "presets": [
+    {
+      "name": "Drink Builder (Cards)",
+      "category": "Custom"
+    }
+  ]
+}
+{% endschema %}
