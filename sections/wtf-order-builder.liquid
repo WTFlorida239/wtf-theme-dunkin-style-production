@@ -311,10 +311,6 @@
             <span>Size Upgrade</span>
             <span data-size-price>+$0.00</span>
           </div>
-          <div class="price-line" data-pumps-upcharge style="display: none;">
-            <span>Extra pumps</span>
-            <span data-pumps-price>+$0.00</span>
-          </div>
           <div class="price-line" data-boosters-upcharge style="display: none;">
             <span>Boosters</span>
             <span data-boosters-price>+$0.00</span>
@@ -855,23 +851,6 @@
       }
     };
 
-    // Pricing & pump configuration from section settings
-    const priceConfig = {
-      extraPumpPrice: parseFloat('{{ section.settings.extra_pump_price | default: 0.5 }}') || 0.5,
-      includedPumps: {
-        small: parseInt('{{ section.settings.included_pumps_small | default: 4 }}', 10) || 4,
-        medium: parseInt('{{ section.settings.included_pumps_medium | default: 4 }}', 10) || 4,
-        large: parseInt('{{ section.settings.included_pumps_large | default: 6 }}', 10) || 6,
-        gallon: parseInt('{{ section.settings.included_pumps_gallon | default: 24 }}', 10) || 24
-      },
-      sizeUpcharge: {
-        small: parseFloat('{{ section.settings.upcharge_small | default: 0 }}') || 0,
-        medium: parseFloat('{{ section.settings.upcharge_medium | default: 1 }}') || 1,
-        large: parseFloat('{{ section.settings.upcharge_large | default: 2 }}') || 2,
-        gallon: parseFloat('{{ section.settings.upcharge_gallon | default: 35 }}') || 35
-      }
-    };
-
     const orderBuilder = {
       currentCategory: 'kava',
       selectedOptions: {
@@ -889,7 +868,6 @@
       
       init() {
         this.bindEvents();
-        this.updateSizeChipLabels();
         this.updateDisplay();
         this.validateForm();
       },
@@ -1080,16 +1058,9 @@
         const counter = document.querySelector('[data-flavor-counter]');
         if (counter) {
           const text = counter.querySelector('.flavor-counter__text');
-          const limit = counter.querySelector('.flavor-counter__limit');
-          const size = this.selectedOptions.size;
-          const included = priceConfig.includedPumps[size] || 0;
-          const count = this.selectedOptions.flavors.length;
-          const extra = Math.max(0, count - included);
           if (text) {
-            text.textContent = `${count} pump${count !== 1 ? 's' : ''} selected (${included} included, ${extra} extra)`;
-          }
-          if (limit) {
-            limit.textContent = `Extra pumps $${(priceConfig.extraPumpPrice || 0).toFixed(2)} each`;
+            const count = this.selectedOptions.flavors.length;
+            text.textContent = `${count} flavor${count !== 1 ? 's' : ''} selected`;
           }
         }
       },
@@ -1120,13 +1091,16 @@
         document.dispatchEvent(new CustomEvent('wtf:size-changed', {
           detail: { size, sizeData: { price: this.getSizePriceDelta(size) } }
         }));
-
-        // Update line item properties impacted by size (included pumps, size upcharge)
-        this.updateLineItemProperties();
       },
       
       getSizePriceDelta(size) {
-        return Number(priceConfig.sizeUpcharge[size] || 0);
+        const deltas = {
+          small: 0,
+          medium: 1,
+          large: 2,
+          gallon: 35
+        };
+        return deltas[size] || 0;
       },
       
       filterFlavors(searchTerm) {
@@ -1153,14 +1127,8 @@
         const boosterTotal = this.selectedOptions.boosters.reduce((sum, b) => sum + (b.price || 0), 0);
         const concentrationDelta = this.selectedOptions.concentration === 'strong' ? 10 : 
                                    this.selectedOptions.concentration === 'extra' ? 20 : 0;
-
-        // Pump math: treat each selected flavor as one pump for now
-        const included = priceConfig.includedPumps[this.selectedOptions.size] || 0;
-        const pumpCount = this.selectedOptions.flavors.length;
-        const extraPumps = Math.max(0, pumpCount - included);
-        const pumpExtraCost = extraPumps * (priceConfig.extraPumpPrice || 0);
         
-        const subtotal = this.basePrice + sizeDelta + boosterTotal + concentrationDelta + pumpExtraCost;
+        const subtotal = this.basePrice + sizeDelta + boosterTotal + concentrationDelta;
         const quantity = parseInt(document.querySelector('[data-quantity-input]')?.value) || 1;
         const total = subtotal * quantity;
         
@@ -1174,14 +1142,6 @@
         } else {
           sizeUpcharge.style.display = 'none';
         }
-
-        const pumpsUpEl = document.querySelector('[data-pumps-upcharge]');
-        if (pumpExtraCost > 0) {
-          pumpsUpEl.style.display = 'flex';
-          document.querySelector('[data-pumps-price]').textContent = `+$${pumpExtraCost.toFixed(2)}`;
-        } else {
-          pumpsUpEl.style.display = 'none';
-        }
         
         const boostersUpcharge = document.querySelector('[data-boosters-upcharge]');
         if (boosterTotal > 0) {
@@ -1194,20 +1154,6 @@
         // Update totals
         document.querySelector('[data-total-price]').textContent = `$${total.toFixed(2)}`;
         document.querySelector('[data-cart-button-price]').textContent = `$${total.toFixed(2)}`;
-
-        // Write pump-related properties to the hidden inputs
-        if (window.WTFLineItemProperties) {
-          WTFLineItemProperties.update('included-pumps', included);
-          WTFLineItemProperties.update('pump-count', pumpCount);
-          WTFLineItemProperties.update('extra-pumps', extraPumps);
-          WTFLineItemProperties.update('extra-pump-price', priceConfig.extraPumpPrice);
-          WTFLineItemProperties.update('extra-pump-upcharge', pumpExtraCost.toFixed(2));
-          WTFLineItemProperties.update('booster-upcharge', boosterTotal.toFixed(2));
-          WTFLineItemProperties.update('size-upcharge', sizeDelta.toFixed(2));
-        }
-
-        // Refresh the flavor counter with pump info
-        this.updateFlavorCounter();
       },
       
       updateVariantId() {
@@ -1257,13 +1203,6 @@
       updateLineItemProperties() {
         // Update hidden form fields
         if (window.WTFLineItemProperties) {
-          const sizeDelta = this.getSizePriceDelta(this.selectedOptions.size);
-          const included = priceConfig.includedPumps[this.selectedOptions.size] || 0;
-          const pumpCount = this.selectedOptions.flavors.length;
-          const extra = Math.max(0, pumpCount - included);
-          const pumpExtraCost = extra * (priceConfig.extraPumpPrice || 0);
-          const boosterTotal = this.selectedOptions.boosters.reduce((sum, b) => sum + (b.price || 0), 0);
-
           WTFLineItemProperties.update('size', this.capitalizeFirst(this.selectedOptions.size));
           WTFLineItemProperties.update('strain', this.capitalizeFirst(this.selectedOptions.strain));
           WTFLineItemProperties.update('flavor', this.selectedOptions.flavors.map(f => this.capitalizeFirst(f)).join(', '));
@@ -1272,14 +1211,7 @@
           WTFLineItemProperties.update('ice', this.capitalizeFirst(this.selectedOptions.ice));
           WTFLineItemProperties.update('boosters', this.selectedOptions.boosters);
           WTFLineItemProperties.update('instructions', this.selectedOptions.instructions);
-          WTFLineItemProperties.update('size-upcharge', sizeDelta.toFixed(2));
-
-          WTFLineItemProperties.update('included-pumps', included);
-          WTFLineItemProperties.update('pump-count', pumpCount);
-          WTFLineItemProperties.update('extra-pumps', extra);
-          WTFLineItemProperties.update('extra-pump-price', priceConfig.extraPumpPrice);
-          WTFLineItemProperties.update('extra-pump-upcharge', pumpExtraCost.toFixed(2));
-          WTFLineItemProperties.update('booster-upcharge', boosterTotal.toFixed(2));
+          WTFLineItemProperties.update('size-upcharge', this.getSizePriceDelta(this.selectedOptions.size));
         }
       },
       
@@ -1428,18 +1360,7 @@
     {"type":"text","id":"drafts_small_variant","label":"Draft – Small variantId"},
     {"type":"text","id":"drafts_medium_variant","label":"Draft – Medium variantId"},
     {"type":"text","id":"drafts_large_variant","label":"Draft – Large variantId"},
-    {"type":"text","id":"drafts_gallon_variant","label":"Draft – Gallon variantId"},
-
-    {"type":"header","content":"Pricing & Pumps"},
-    {"type":"number","id":"extra_pump_price","label":"Extra pump price","default":0.5,"step":0.01,"min":0},
-    {"type":"range","id":"included_pumps_small","label":"Included pumps – Small","min":0,"max":12,"step":1,"default":4},
-    {"type":"range","id":"included_pumps_medium","label":"Included pumps – Medium","min":0,"max":12,"step":1,"default":4},
-    {"type":"range","id":"included_pumps_large","label":"Included pumps – Large","min":0,"max":16,"step":1,"default":6},
-    {"type":"range","id":"included_pumps_gallon","label":"Included pumps – Gallon","min":0,"max":64,"step":1,"default":24},
-    {"type":"number","id":"upcharge_small","label":"Size upcharge – Small","default":0,"step":0.01,"min":0},
-    {"type":"number","id":"upcharge_medium","label":"Size upcharge – Medium","default":1,"step":0.01,"min":0},
-    {"type":"number","id":"upcharge_large","label":"Size upcharge – Large","default":2,"step":0.01,"min":0},
-    {"type":"number","id":"upcharge_gallon","label":"Size upcharge – Gallon","default":35,"step":0.01,"min":0}
+    {"type":"text","id":"drafts_gallon_variant","label":"Draft – Gallon variantId"}
   ],
   "presets": [
     {

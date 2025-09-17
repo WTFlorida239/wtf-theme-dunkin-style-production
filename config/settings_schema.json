@@ -65,6 +65,51 @@
     ]
   },
   {
+    "name": "Store info",
+    "settings": [
+      {
+        "type": "text",
+        "id": "store_phone",
+        "label": "Phone"
+      },
+      {
+        "type": "text",
+        "id": "store_email",
+        "label": "Email"
+      },
+      {
+        "type": "text",
+        "id": "store_address_1",
+        "label": "Address line 1"
+      },
+      {
+        "type": "text",
+        "id": "store_address_2",
+        "label": "Address line 2"
+      },
+      {
+        "type": "text",
+        "id": "store_city",
+        "label": "City"
+      },
+      {
+        "type": "text",
+        "id": "store_state",
+        "label": "State/Province"
+      },
+      {
+        "type": "text",
+        "id": "store_zip",
+        "label": "Postal code"
+      },
+      {
+        "type": "textarea",
+        "id": "store_hours",
+        "label": "Hours (optional)"
+      }
+    ]
+  },
+  {
     "name": "Cart & UX",
     "settings": [
       {
@@ -394,7 +439,6 @@
         "type": "paragraph",
         "content": "Configure up to 8 global category cards. Sections can reference these settings as defaults. Only populated cards will render."
       }
-      // (keeping your existing card_1 ... card_8 definitions unchanged)
     ]
   },
   {
