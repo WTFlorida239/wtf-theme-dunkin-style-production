@@ -1,0 +1,29 @@
+# .theme-check.yml
+# Shopify Theme Check configuration
+# Docs: https://shopify.dev/docs/themes/tools/theme-check
+
+# Start from Shopify’s recommended ruleset
+extends:
+  - theme-check:recommended
+
+# Ignore common non-theme paths
+ignore:
+  - node_modules/**
+  - vendor/**
+  - tmp/**
+  - log/**
+  - .git/**
+  - .github/**
+  - .vscode/**
+  - config.yml
+  - deploy.yml
+
+# Example overrides (uncomment if needed)
+# checks:
+#   MissingTemplate:
+#     enabled: false
+#   TranslationKeyExists:
+#     severity: warning
+
+# Note: fail_level is a CLI flag, not a config option.
+# Use it like: `shopify theme check --fail-level error`
