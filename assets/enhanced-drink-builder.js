@@ -1,228 +1,269 @@
-/* assets/enhanced-drink-builder.js
-   WTF | Welcome To Florida — Enhanced Drink Builder
-   - Works with sections/enhanced-drink-builder.liquid
-   - Supports multiple instances on a page (unique section IDs)
-   - No dependencies (vanilla JS)
-*/
-
 (function () {
-  'use strict';
+  const sel = (q, el = document) => el.querySelector(q);
+  const selAll = (q, el = document) => Array.from(el.querySelectorAll(q));
 
-  // -------- Money formatting --------
-  function formatMoney(cents) {
-    // Try Shopify currency if available, else USD, else "$"
-    const code =
-      (window.Shopify &&
-        window.Shopify.currency &&
-        (window.Shopify.currency.active || window.Shopify.currency)) ||
-      null;
-    try {
-      return new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency: code || 'USD',
-        minimumFractionDigits: 2
-      }).format((cents || 0) / 100);
-    } catch (e) {
-      const val = ((cents || 0) / 100).toFixed(2);
-      return '$' + val;
-    }
-  }
-
-  // -------- Section initializer --------
-  function initEnhancedDrinkBuilder(root) {
-    if (!root || root.dataset.wtfDbInited === '1') return;
-    root.dataset.wtfDbInited = '1';
-
-    const payloadEl = root.querySelector('script[data-variants]');
-    if (!payloadEl) return; // nothing to do if no product payload
-    let payload = null;
-    try {
-      payload = JSON.parse(payloadEl.textContent || '{}');
-    } catch (e) {
-      console.warn('WTF Drink Builder: invalid variants payload', e);
-      return;
-    }
-
-    const sizeIndex = typeof payload.sizeIndex === 'number' ? payload.sizeIndex : 0;
-    const variants = Array.isArray(payload.variants) ? payload.variants : [];
-
-    // Key elements
-    const form = root.querySelector('form[id^="wtf-product-form-"]');
-    if (!form) return;
-
-    const priceEl = root.querySelector('.wtf-db__price');
-    const upsellEl = root.querySelector('.wtf-db__upsell');
-
-    const sizeInputs = root.querySelectorAll('input[name="options[Size]"]');
-    const idInput = form.querySelector('input[name="id"]');
-
-    const flavorCatRadios = root.querySelectorAll('input[name="flavor_category_choice"]');
-    const flavorSelectWrap = root.querySelector('.wtf-db__flavor-select-wrap');
-    const flavorSelect = root.querySelector('#' + (flavorSelectWrap?.querySelector('select')?.id || ''));
-    const flavorCatProp = form.querySelector('input[name="properties[Flavor Category]"]');
-    const flavorProp = form.querySelector('input[name="properties[Flavor]"]');
-
-    const boostersChecks = root.querySelectorAll('.wtf-boosters');
-    const sweetenersChecks = root.querySelectorAll('.wtf-sweeteners');
-    const creamersChecks = root.querySelectorAll('.wtf-creamers');
-    const boostersProp = form.querySelector('input[name="properties[Boosters]"]');
-    const sweetenersProp = form.querySelector('input[name="properties[Sweeteners]"]');
-    const creamersProp = form.querySelector('input[name="properties[Creamers]"]');
-
-    const thcWrap = root.querySelector('[data-thc-wrap]');
-    const thcSelect = thcWrap ? thcWrap.querySelector('select') : null;
-    const thcProp = form.querySelector('input[name="properties[THC Concentration]"]');
-
-    const staffMsg = root.querySelector('[data-staff-msg]');
-    const productKind = (root.querySelector('.wtf-db')?.getAttribute('data-product-kind') || 'kratom').toLowerCase();
-
-    // ----- Helpers -----
-    function getCurrentSize() {
-      const r = Array.from(sizeInputs).find(i => i.checked);
-      return r ? r.value : null;
-    }
-
-    function getVariantForSize(sizeValue) {
-      if (!variants.length) return null;
-      for (const v of variants) {
-        if (sizeIndex >= 0 && v.options && v.options[sizeIndex] === sizeValue) {
-          return v;
-        }
-      }
-      // fallback
-      return variants[0];
-    }
-
-    function priceForSize(sizeValue) {
-      const v = getVariantForSize(sizeValue);
-      return v ? v.price : null;
-    }
-
-    function filterFlavorOptions(categorySlug) {
-      if (!flavorSelect) return;
-      // Reset selection
-      flavorSelect.value = '';
-      const opts = flavorSelect.querySelectorAll('option[data-cat]');
-      opts.forEach(opt => {
-        const show = opt.getAttribute('data-cat') === categorySlug;
-        opt.hidden = !show;
-      });
-    }
-
-    function syncChecksToHidden(selector, hiddenInput) {
-      if (!hiddenInput) return;
-      const vals = Array.from(root.querySelectorAll(selector + ':checked')).map(i => i.value);
-      hiddenInput.value = vals.join(', ');
-    }
-
-    function syncAllProperties() {
-      syncChecksToHidden('.wtf-boosters', boostersProp);
-      syncChecksToHidden('.wtf-sweeteners', sweetenersProp);
-      syncChecksToHidden('.wtf-creamers', creamersProp);
-      if (thcProp && thcSelect) thcProp.value = thcSelect.value || '';
-    }
-
-    // ----- UI update (price, upsell, gallon logic) -----
-    function updateUI() {
-      const size = getCurrentSize();
-      const v = size ? getVariantForSize(size) : variants[0];
-      if (!v) return;
-
-      // Variant id + price
-      if (idInput) idInput.value = v.id;
-      if (priceEl) priceEl.textContent = formatMoney(v.price);
-
-      // Upsell
-      if (upsellEl) {
-        let msg = '';
-        const sizeLower = (size || '').toLowerCase();
-        if (sizeLower === 'medium') {
-          const pM = v.price;
-          const pL = priceForSize('Large');
-          if (pL && pL > pM) msg = 'Upgrade to Large for ' + formatMoney(pL - pM) + ' more';
-        } else if (sizeLower === 'large') {
-          const pL = v.price;
-          const pG = priceForSize('Gallon');
-          if (pG && pG > pL) msg = 'Upgrade to Gallon for ' + formatMoney(pG - pL) + ' more';
-        }
-        upsellEl.textContent = msg;
-      }
-
-      // Gallon logic
-      const isGallon = ((size || '') + '').toLowerCase() === 'gallon';
-      const isDelta9 = productKind === 'delta9';
-
-      if (isGallon && !isDelta9) {
-        // Kratom/Kava Gallon: hide flavor picker, show staff message, clear THC
-        if (flavorSelectWrap) flavorSelectWrap.style.display = 'none';
-        if (staffMsg) staffMsg.style.display = 'block';
-        if (thcWrap) thcWrap.style.display = 'none';
-        if (thcProp) thcProp.value = '';
-        if (flavorProp) flavorProp.value = 'Discuss with staff';
-      } else {
-        if (flavorSelectWrap) flavorSelectWrap.style.display = '';
-        if (staffMsg) staffMsg.style.display = 'none';
-        if (isGallon && isDelta9) {
-          if (thcWrap) thcWrap.style.display = '';
-        } else {
-          if (thcWrap) thcWrap.style.display = 'none';
-          if (thcProp) thcProp.value = '';
-        }
-      }
-    }
-
-    // ----- Wire events -----
-    // Default flavor category = sugar-free
-    filterFlavorOptions('sugar-free');
-
-    Array.from(sizeInputs).forEach(r => r.addEventListener('change', updateUI));
-
-    Array.from(flavorCatRadios).forEach(r => {
-      r.addEventListener('change', (e) => {
-        const cat = e.target.value; // 'sugar-free' | 'regular'
-        const pretty = (cat === 'sugar-free') ? 'Sugar-free' : 'Regular';
-        filterFlavorOptions(cat);
-        if (flavorCatProp) flavorCatProp.value = pretty;
-        if (flavorProp) flavorProp.value = '';
-      });
+  /**
+   * Helper: Submits a form to /cart/add.js, handles errors, and dispatches events.
+   * @param {HTMLFormElement} form - The product form to submit.
+   * @returns {Promise<object>} - A promise that resolves with the fresh cart object.
+   */
+  async function addToCartAjax(form) {
+    const formData = new FormData(form);
+    const res = await fetch("/cart/add.js", {
+      method: "POST",
+      headers: { Accept: "application/json" },
+      body: formData,
     });
 
-    if (flavorSelect) {
-      flavorSelect.addEventListener('change', () => {
-        if (flavorProp) flavorProp.value = flavorSelect.value || '';
-      });
+    if (!res.ok) {
+      let msg = "Could not add to cart.";
+      try {
+        const err = await res.json();
+        msg = err?.description || msg;
+      } catch (e) {}
+      const errEl = form.querySelector("[data-product-form-error]");
+      if (errEl) {
+        errEl.textContent = msg;
+        errEl.hidden = false;
+      }
+      window.dispatchEvent(
+        new CustomEvent("cart:add:error", { detail: { message: msg } })
+      );
+      throw new Error(msg);
     }
 
-    Array.from(boostersChecks).forEach(c => c.addEventListener('change', syncAllProperties));
-    Array.from(sweetenersChecks).forEach(c => c.addEventListener('change', syncAllProperties));
-    Array.from(creamersChecks).forEach(c => c.addEventListener('change', syncAllProperties));
-    if (thcSelect) thcSelect.addEventListener('change', syncAllProperties);
+    const added = await res.json();
+    window.dispatchEvent(
+      new CustomEvent("cart:add:success", { detail: { item: added } })
+    );
 
-    form.addEventListener('submit', () => {
-      // Make sure all hidden property fields are up to date before submit
-      syncAllProperties();
-      if (flavorSelect && flavorSelectWrap && flavorSelectWrap.style.display !== 'none') {
-        if (flavorProp && !flavorProp.value) flavorProp.value = flavorSelect.value || '';
+    // Get fresh cart and emit a global event for other scripts (like a cart drawer) to listen to.
+    const cartRes = await fetch("/cart.js");
+    const cart = await cartRes.json();
+    window.dispatchEvent(new CustomEvent("cart:updated", { detail: { cart } }));
+    return cart;
+  }
+
+  /**
+   * Dispatches a global event to signal that the cart drawer should open.
+   */
+  function openDrawer() {
+    window.dispatchEvent(new CustomEvent("cart:drawer:open"));
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const root = sel("#enhanced-drink-builder");
+    if (!root) return;
+
+    // Core builder elements
+    const form = sel("[data-product-form]", root);
+    const priceEl = sel("#builder-price", root);
+    const upsellEl = sel("#builder-upsell", root);
+    const variantId = sel("#builder-variant-id", root);
+    const sizeRadios = selAll('input[name="size"]', root);
+    const strains = selAll('input[name="strain"]', root);
+    const thcFieldset = sel("#thc-fieldset", root);
+    const gallonNote = sel("#gallon-note", root);
+    const addToCartBtn = sel("[data-add-to-cart]", form); // AJAX button
+    const errorRegion = sel("[data-product-form-error]", form); // AJAX error region
+
+    const prop = {
+      size: sel("#prop-size", root),
+      strain: sel("#prop-strain", root),
+      thc: sel("#prop-thc", root),
+      flavors: sel("#prop-flavors", root),
+      flavorCategory: sel("#prop-flavor-category", root),
+      pumpDetail: sel("#prop-pumps", root),
+      boosters: sel("#prop-boosters", root),
+      sweeteners: sel("#prop-sweeteners", root),
+      creamers: sel("#prop-creamers", root),
+    };
+
+    // Variant data from the page
+    const varData = JSON.parse(
+      sel(`#builder-variants-${root.dataset.productId || ""}`)?.textContent ||
+        "[]"
+    );
+
+    // Pump meta from the page
+    const pumpMeta = sel("#pump-meta", root);
+    const EXTRA_PRICE = Number(pumpMeta?.dataset.extra || 0.5);
+    const MAX_FLAVORS = Number(pumpMeta?.dataset.maxflavors || 3);
+
+    // Helpers
+    const getSelectedSize = () => sizeRadios.find((r) => r.checked);
+    const findVariantByTitle = (title) =>
+      varData.find(
+        (v) => String(v.title).toLowerCase() === String(title).toLowerCase()
+      );
+    const money = (n) => {
+      try {
+        return new Intl.NumberFormat(undefined, {
+          style: "currency",
+          currency: Shopify.currency.active,
+        }).format(n);
+      } catch {
+        return `$${n.toFixed(2)}`;
       }
-    }, { capture: true });
+    };
 
-    // Initial paint
-    updateUI();
-  }
+    function updateSize() {
+      const s = getSelectedSize();
+      if (!s) return;
+      prop.size.value = s.value;
 
-  // -------- Auto-init on load & theme editor events --------
-  function initAll() {
-    document
-      .querySelectorAll('[id^="enhanced-drink-builder-"]')
-      .forEach(initEnhancedDrinkBuilder);
-  }
+      const v = findVariantByTitle(s.value);
+      if (v) {
+        variantId.value = v.id;
+        priceEl.textContent = money(v.price / 100);
+        const isGallon = /gallon/i.test(s.value);
+        gallonNote.hidden = !isGallon;
+        if (thcFieldset) thcFieldset.hidden = !isGallon;
+      }
 
-  document.addEventListener('DOMContentLoaded', initAll);
+      const sizes = ["Medium", "Large", "Gallon"];
+      const idx = sizes.findIndex(
+        (x) => x.toLowerCase() === s.value.toLowerCase()
+      );
+      const next = sizes[idx + 1] ? findVariantByTitle(sizes[idx + 1]) : null;
+      if (next && v) {
+        const diff = (next.price - v.price) / 100;
+        upsellEl.textContent =
+          diff > 0 ? `Upgrade to ${next.title} for ${money(diff)} more` : "";
+      } else {
+        upsellEl.textContent = "";
+      }
+    }
 
-  // Shopify Theme Editor support
-  document.addEventListener('shopify:section:load', function (e) {
-    if (!e || !e.target) return;
-    const roots = e.target.querySelectorAll('[id^="enhanced-drink-builder-"]');
-    roots.forEach(initEnhancedDrinkBuilder);
+    function updateStrains() {
+      const chosen = strains.filter((c) => c.checked).map((c) => c.value);
+      if (chosen.length > 2) {
+        const last = strains.findLast((c) => c.checked);
+        if (last) last.checked = false;
+        return updateStrains();
+      }
+      prop.strain.value = chosen.join(" + ");
+    }
+
+    function readFlavors() {
+      const flavorRows = selAll("[data-flavor-row]", root);
+      const picked = [];
+      const catSet = new Set();
+      let totalPumps = 0;
+
+      for (const row of flavorRows) {
+        const box = sel('input[type="checkbox"]', row);
+        const name = box?.value;
+        const cat = row.dataset.category || "Regular";
+        const qty = Number(sel('input[type="number"]', row)?.value || 0);
+        if (box?.checked && qty > 0) {
+          picked.push(`${name} (${qty} pump${qty > 1 ? "s" : ""})`);
+          catSet.add(cat);
+          totalPumps += qty;
+        }
+      }
+
+      const s = getSelectedSize();
+      const sizeIncluded = /medium/i.test(s.value)
+        ? 4
+        : /large/i.test(s.value)
+        ? 6
+        : 12;
+      const extra = Math.max(0, totalPumps - sizeIncluded);
+      const v = findVariantByTitle(s.value);
+
+      if (v) {
+        const base = v.price / 100;
+        const total = base + extra * EXTRA_PRICE;
+        priceEl.textContent = money(total);
+      }
+
+      if (picked.length > MAX_FLAVORS) {
+        const last = flavorRows.findLast(
+          (r) => sel('input[type="checkbox"]', r)?.checked
+        );
+        if (last) {
+          sel('input[type="checkbox"]', last).checked = false;
+          sel('input[type="number"]', last).value = 0;
+          return readFlavors();
+        }
+      }
+
+      prop.flavors.value = picked.join(", ");
+      prop.flavorCategory.value = Array.from(catSet).join(", ");
+      prop.pumpDetail.value = `Total pumps: ${totalPumps} (Included ${sizeIncluded}, Extra ${extra} @ ${money(
+        EXTRA_PRICE
+      )} ea)`;
+    }
+
+    function collectGroup(name, target) {
+      const vals = selAll(`input[name="${name}"]`, root)
+        .filter((i) => i.checked)
+        .map((i) => i.value);
+      target.value = vals.join(", ");
+    }
+
+    // --- Wire events for UI changes ---
+    sizeRadios.forEach((r) =>
+      r.addEventListener("change", () => {
+        updateSize();
+        readFlavors();
+      })
+    );
+    strains.forEach((c) => c.addEventListener("change", updateStrains));
+    ["booster", "sweetener", "creamer"].forEach((group) => {
+      selAll(`input[name="${group}"]`, root).forEach((c) =>
+        c.addEventListener("change", () => {
+          collectGroup("booster", prop.boosters);
+          collectGroup("sweetener", prop.sweeteners);
+          collectGroup("creamer", prop.creamers);
+        })
+      );
+    });
+    selAll('input[name="thc"]', root).forEach((r) =>
+      r.addEventListener("change", () => (prop.thc.value = r.value))
+    );
+    root.addEventListener("change", (e) => {
+      if (
+        e.target.matches(
+          '[data-flavor-row] input, [data-flavor-row] input[type="number"]'
+        )
+      ) {
+        readFlavors();
+      }
+    });
+
+    // --- Initialize UI state on page load ---
+    updateSize();
+    updateStrains();
+    collectGroup("booster", prop.boosters);
+    collectGroup("sweetener", prop.sweeteners);
+    collectGroup("creamer", prop.creamers);
+
+    // --- NEW: Handle form submission with AJAX ---
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      // Ensure the correct variant ID is set before submitting
+      const s = getSelectedSize();
+      const v = findVariantByTitle(s?.value);
+      if (v) variantId.value = v.id;
+
+      // Handle the AJAX request
+      if (errorRegion) {
+        errorRegion.textContent = "";
+        errorRegion.hidden = true;
+      }
+      if (addToCartBtn) addToCartBtn.disabled = true;
+
+      try {
+        await addToCartAjax(form);
+        openDrawer(); // Ask the theme to open the cart drawer
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (addToCartBtn) addToCartBtn.disabled = false;
+      }
+    });
   });
 })();

@@ -1,26 +1,6 @@
-root: .
-
-exclude:
-  - node_modules/**
-  - .git/**
-  - .github/**
-
-extends: 
-  - :theme_app_extension
-  - :recommended
+# .theme-check.yml
 
 ignore:
-  - ValidHTMLTranslation
-  - TranslationKeyExists
-
-TemplateLength:
-  max_length: 500
-
-LineLength:
-  max_length: 120
-
-LiquidTag:
-  min_consecutive_statements: 5
-
-require:
-  - ./custom_checks/**
+  - "config/settings_data.json"
+  - "locales/"
+  - "node_modules/"

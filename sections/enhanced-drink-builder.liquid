@@ -1,508 +1,186 @@
-{%- comment -%}
-  Enhanced Drink Builder (WTF | Welcome To Florida)
-  - Supports product and page templates (page requires selecting a product in section settings)
-  - Uses one product option named "Size" with values (Medium, Large, Gallon)
-  - Writes selections to line item properties:
-      Flavor Category, Flavor, Ice Level, Boosters, Sweeteners, Creamers, THC Concentration (when applicable), Notes
-  - Gallon logic:
-      * Kratom/Kava Gallon → hide flavor picker, show "Discuss flavor preferences with staff."
-      * Delta-9 Gallon → show flavor picker AND THC Concentration select
-  - Real-time price display + "Upgrade to Large/Gallon for $X more" upsell message
-{%- endcomment -%}
+{% comment %}
+  Enhanced Drink Builder – WTF | Welcome To Florida
+  - Size: Medium, Large, Gallon
+  - Live price preview
+  - Strains: Green / Red / White / Yellow (max 2; supports ½+½)
+  - Flavors w/ pump counters + category (Regular / Sugar-Free)
+  - Gallon logic + THC selector when applicable
+  - Saves all choices as line item properties
+{% endcomment %}
 
-{% liquid
-  assign ctx_product = product
-  if ctx_product == nil and section.settings.product != blank
-    assign ctx_product = section.settings.product
-  endif
-%}
+<section
+  id="enhanced-drink-builder"
+  class="wtf-builder"
+  aria-labelledby="builder-title"
+  data-product-id="{{ product.id }}"
+>
+  <h2 id="builder-title">{{ section.settings.title | default: 'Build your drink' }}</h2>
 
-<section id="enhanced-drink-builder-{{ section.id }}" class="wtf-drink-builder" data-section-id="{{ section.id }}">
-  {%- if ctx_product == nil -%}
-    <div class="wtf-db__placeholder" role="status" aria-live="polite">
-      <p style="padding:1rem;border:1px dashed #ddd;border-radius:8px;">
-        Select a product in this section’s settings to enable the drink builder.
-      </p>
-    </div>
-    {% schema %}
-    {
-      "name": "Enhanced Drink Builder",
-      "templates": ["product", "page"],
-      "settings": [
-        { "type": "product", "id": "product", "label": "Product (for Pages)" },
+  {%- assign included_pumps = product.metafields.custom.included_pumps | default: 4 -%}
+  {%- assign extra_pump_price = product.metafields.custom.extra_pump_price | default: 0.50 -%}
+  {%- assign max_flavors = product.metafields.custom.max_flavors | default: 3 -%}
 
-        { "type": "select", "id": "product_kind", "label": "Product kind (for Gallon logic)", "default": "auto",
-          "options": [
-            { "value": "auto", "label": "Auto-detect from product tags" },
-            { "value": "kratom", "label": "Kratom" },
-            { "value": "kava", "label": "Kava" },
-            { "value": "delta9", "label": "Delta-9" }
-          ]
-        },
+  <form
+    id="builder-form-{{ product.id }}"
+    method="post"
+    action="/cart/add"
+    data-product-form
+    role="form"
+    aria-describedby="builder-help"
+  >
+    <input type="hidden" name="id" id="builder-variant-id">
 
-        { "type": "header", "content": "Flavor lists" },
-        { "type": "textarea", "id": "sugar_free_flavors", "label": "Sugar-free flavors (one per line)",
-          "default": "Blackberry\nWhite Chocolate\nPumpkin Spice\nLemon Spritz\nVanilla\nMaple Bourbon Pecan\nPeach\nSimple Syrup\nCosmopolitain\nRaspberry Lemonade\nPomegranate\nBlueberry Lavender\nSalted Caramel\nRose\nMexican Chocolate"
-        },
-        { "type": "textarea", "id": "regular_flavors", "label": "Regular-sugar flavors (one per line)",
-          "default": "Caramel Apple Butter\nLime\nGrenadine\nDark Chocolate\nMargarita\nBrown Sugar\nSalted Chocolate Caramel\nHibiscus Passion Fruit\nBlueberry\nCoconut Caramel (Samoa Cookie)\nCotton Candy"
-        },
-
-        { "type": "header", "content": "Modifiers" },
-        { "type": "text", "id": "ice_levels", "label": "Ice levels (comma separated)", "default": "No Ice, Light Ice, Regular Ice, Extra Ice" },
-        { "type": "textarea", "id": "boosters", "label": "Boosters (one per line)", "default": "Kratom Shot\nKava Shot\nEnergy Shot" },
-        { "type": "textarea", "id": "sweeteners", "label": "Sweeteners (one per line)", "default": "Stevia\nCane Sugar\nAgave" },
-        { "type": "textarea", "id": "creamers", "label": "Creamers (one per line)", "default": "Half & Half\nAlmond Milk\nOat Milk\nCoconut Milk" },
-
-        { "type": "header", "content": "Delta-9 (THC) concentration options" },
-        { "type": "text", "id": "thc_concentrations", "label": "THC concentrations (comma separated)", "default": "2 mg, 5 mg, 10 mg" },
-
-        { "type": "header", "content": "Copy & UX" },
-        { "type": "text", "id": "staff_msg", "label": "Staff message for Kratom/Kava Gallon", "default": "Discuss flavor preferences with staff." }
-      ],
-      "blocks": [],
-      "presets": [{ "name": "Enhanced Drink Builder" }]
-    }
-    {% endschema %}
-    {%- break -%}
-  {%- endif -%}
-
-  {%- comment -%} ----- product + variants data for JS ----- {%- endcomment -%}
-  {% liquid
-    assign size_option_index = 0
-    for opt in ctx_product.options_with_values
-      if opt.name == 'Size'
-        assign size_option_index = forloop.index0
-      endif
-    endfor
-
-    assign tags_str = ctx_product.tags | join: ',' | downcase
-    assign inferred_kind = 'kratom'
-    if tags_str contains 'kava'
-      assign inferred_kind = 'kava'
-    endif
-    if tags_str contains 'delta-9' or tags_str contains 'delta9'
-      assign inferred_kind = 'delta9'
-    endif
-
-    assign effective_kind = section.settings.product_kind
-    if effective_kind == 'auto'
-      assign effective_kind = inferred_kind
-    endif
-  %}
-
-  <script type="application/json" data-variants>
-    {
-      "sizeIndex": {{ size_option_index }},
-      "variants": [
-        {%- for v in ctx_product.variants -%}
-          {
-            "id": {{ v.id }},
-            "available": {{ v.available | json }},
-            "price": {{ v.price | json }},
-            "compare_at_price": {{ v.compare_at_price | default: 0 | json }},
-            "title": {{ v.title | json }},
-            "options": {{ v.options | json }}
-          }{%- unless forloop.last -%},{%- endunless -%}
-        {%- endfor -%}
-      ]
-    }
-  </script>
-
-  <div class="wtf-db" data-product-kind="{{ effective_kind }}">
-    <div class="wtf-db__header" style="margin-bottom:1rem;">
-      <h2 class="wtf-db__title" style="font-size:1.25rem;line-height:1.2;">Customize your drink</h2>
-      <div class="wtf-db__price" aria-live="polite" style="margin-top:.25rem;font-weight:600;">
-        {{ ctx_product.price | money }}
-      </div>
-      <div class="wtf-db__upsell" aria-live="polite" style="margin-top:.25rem;color:#555;"></div>
+    <!-- Live price -->
+    <div class="price-row" aria-live="polite">
+      <span class="current-price" id="builder-price">{{ product.price | money }}</span>
+      <span class="upsell-hint" id="builder-upsell"></span>
     </div>
 
-    {% form 'product', ctx_product, id: 'wtf-product-form-' | append: section.id %}
-      {%- comment -%} SIZE (maps to actual product variants) {%- endcomment -%}
-      <fieldset class="wtf-db__group" style="margin-bottom:1rem;">
-        <legend class="wtf-db__legend">Size</legend>
-        <div class="wtf-db__chips" role="radiogroup" aria-label="Size">
-        {%- assign printed = false -%}
-        {%- for opt in ctx_product.options_with_values -%}
-          {%- if opt.name == 'Size' -%}
-            {%- for val in opt.values -%}
-              {%- assign chip_id = 'size-' | append: section.id | append: '-' | append: forloop.index -%}
-              <label class="chip" for="{{ chip_id }}" style="display:inline-block;margin:.25rem .5rem .25rem 0;">
-                <input type="radio" id="{{ chip_id }}" name="options[Size]" value="{{ val | escape }}"
-                  {% if forloop.first %}checked{% endif %} />
-                <span>{{ val }}</span>
-              </label>
-            {%- endfor -%}
-            {%- assign printed = true -%}
-          {%- endif -%}
+    <!-- Size (variants) -->
+    <fieldset>
+      <legend>Size</legend>
+      <div class="chip-row" role="radiogroup" aria-label="Choose size">
+        {%- for v in product.variants -%}
+          <label class="chip">
+            <input
+              type="radio"
+              name="size"
+              value="{{ v.title | escape }}"
+              data-variant-id="{{ v.id }}"
+              data-price="{{ v.price | divided_by: 100.0 }}"
+              {% if forloop.first %}
+                checked
+              {% endif %}
+            >
+            {{ v.title }}
+          </label>
         {%- endfor -%}
-        {%- unless printed -%}
-          <em>Product is missing a “Size” option with Medium / Large / Gallon.</em>
-        {%- endunless -%}
-        </div>
-      </fieldset>
-
-      {%- comment -%} FLAVOR CATEGORY + FLAVOR (with sugar-free vs regular) {%- endcomment -%}
-      {% assign sf_list = section.settings.sugar_free_flavors | newline_to_br | split: '<br />' %}
-      {% assign reg_list = section.settings.regular_flavors | newline_to_br | split: '<br />' %}
-
-      <fieldset class="wtf-db__group" style="margin-bottom:1rem;">
-        <legend class="wtf-db__legend">Flavor</legend>
-
-        <div class="wtf-db__flavor-cat" role="radiogroup" aria-label="Flavor category" style="margin-bottom:.5rem;">
-          {% assign cat1 = 'Sugar-free' %}
-          {% assign cat2 = 'Regular' %}
-          <label style="margin-right:1rem;"><input type="radio" name="flavor_category_choice" value="sugar-free" checked> {{ cat1 }}</label>
-          <label><input type="radio" name="flavor_category_choice" value="regular"> {{ cat2 }}</label>
-        </div>
-
-        <div class="wtf-db__flavor-select-wrap">
-          <select id="wtf-flavor-{{ section.id }}" class="wtf-db__select" aria-label="Flavor">
-            <option value="">Select a flavor…</option>
-            {%- for f in sf_list -%}
-              {%- assign f_trim = f | strip -%}
-              {%- if f_trim != blank -%}
-                <option data-cat="sugar-free" value="{{ f_trim | escape }}">{{ f_trim }}</option>
-              {%- endif -%}
-            {%- endfor -%}
-            {%- for f in reg_list -%}
-              {%- assign f_trim = f | strip -%}
-              {%- if f_trim != blank -%}
-                <option data-cat="regular" value="{{ f_trim | escape }}">{{ f_trim }}</option>
-              {%- endif -%}
-            {%- endfor -%}
-          </select>
-        </div>
-
-        {%- comment -%} Stored as line item properties {%- endcomment -%}
-        <input type="hidden" name="properties[Flavor Category]" value="Sugar-free" />
-        <input type="hidden" name="properties[Flavor]" value="" />
-      </fieldset>
-
-      {%- comment -%} ICE LEVEL {%- endcomment -%}
-      {% assign ice_levels = section.settings.ice_levels | split: ',' %}
-      <fieldset class="wtf-db__group" style="margin-bottom:1rem;">
-        <legend class="wtf-db__legend">Ice level</legend>
-        <div class="wtf-db__chips" role="radiogroup" aria-label="Ice level">
-          {% for lvl in ice_levels %}
-            {% assign lvl_trim = lvl | strip %}
-            {% assign ice_id = 'ice-' | append: section.id | append: '-' | append: forloop.index %}
-            <label class="chip" for="{{ ice_id }}" style="display:inline-block;margin:.25rem .5rem .25rem 0;">
-              <input type="radio" id="{{ ice_id }}" name="properties[Ice Level]" value="{{ lvl_trim | escape }}"
-                {% if forloop.first %}checked{% endif %} />
-              <span>{{ lvl_trim }}</span>
-            </label>
-          {% endfor %}
-        </div>
-      </fieldset>
-
-      {%- comment -%} BOOSTERS, SWEETENERS, CREAMERS (checkboxes → joined into hidden properties) {%- endcomment -%}
-      {% assign boosters = section.settings.boosters | newline_to_br | split: '<br />' %}
-      {% assign sweeteners = section.settings.sweeteners | newline_to_br | split: '<br />' %}
-      {% assign creamers = section.settings.creamers | newline_to_br | split: '<br />' %}
-
-      <fieldset class="wtf-db__group" style="margin-bottom:1rem;">
-        <legend class="wtf-db__legend">Boosters</legend>
-        <div class="wtf-db__checks">
-          {% for b in boosters %}
-            {% assign b_trim = b | strip %}{% if b_trim != blank %}
-            <label style="display:inline-block;margin:.25rem .75rem .25rem 0;">
-              <input type="checkbox" class="wtf-boosters" value="{{ b_trim | escape }}"> {{ b_trim }}
-            </label>
-            {% endif %}
-          {% endfor %}
-        </div>
-        <input type="hidden" name="properties[Boosters]" value="" />
-      </fieldset>
-
-      <fieldset class="wtf-db__group" style="margin-bottom:1rem;">
-        <legend class="wtf-db__legend">Sweeteners</legend>
-        <div class="wtf-db__checks">
-          {% for s in sweeteners %}
-            {% assign s_trim = s | strip %}{% if s_trim != blank %}
-            <label style="display:inline-block;margin:.25rem .75rem .25rem 0;">
-              <input type="checkbox" class="wtf-sweeteners" value="{{ s_trim | escape }}"> {{ s_trim }}
-            </label>
-            {% endif %}
-          {% endfor %}
-        </div>
-        <input type="hidden" name="properties[Sweeteners]" value="" />
-      </fieldset>
-
-      <fieldset class="wtf-db__group" style="margin-bottom:1rem;">
-        <legend class="wtf-db__legend">Creamers</legend>
-        <div class="wtf-db__checks">
-          {% for c in creamers %}
-            {% assign c_trim = c | strip %}{% if c_trim != blank %}
-            <label style="display:inline-block;margin:.25rem .75rem .25rem 0;">
-              <input type="checkbox" class="wtf-creamers" value="{{ c_trim | escape }}"> {{ c_trim }}
-            </label>
-            {% endif %}
-          {% endfor %}
-        </div>
-        <input type="hidden" name="properties[Creamers]" value="" />
-      </fieldset>
-
-      {%- comment -%} THC Concentration (Delta-9 Gallon only) {%- endcomment -%}
-      {% assign thc_opts = section.settings.thc_concentrations | split: ',' %}
-      <div class="wtf-db__thc" data-thc-wrap style="display:none;margin-bottom:1rem;">
-        <label for="wtf-thc-{{ section.id }}" class="wtf-db__legend">THC Concentration</label>
-        <select id="wtf-thc-{{ section.id }}" aria-label="THC Concentration">
-          <option value="">Select concentration…</option>
-          {% for t in thc_opts %}
-            {% assign t_trim = t | strip %}{% if t_trim != blank %}
-            <option value="{{ t_trim | escape }}">{{ t_trim }}</option>
-            {% endif %}
-          {% endfor %}
-        </select>
-        <input type="hidden" name="properties[THC Concentration]" value="" />
       </div>
+      <input type="hidden" name="properties[Size]" id="prop-size" value="">
+    </fieldset>
 
-      {%- comment -%} Staff message for Kratom/Kava Gallon {%- endcomment -%}
-      <p class="wtf-db__staff-msg" data-staff-msg style="display:none;margin:.5rem 0 1rem;color:#555;">
-        {{ section.settings.staff_msg }}
-      </p>
+    <!-- Strains (max 2; ½+½ supported) -->
+    <fieldset>
+      <legend>Strain (up to 2)</legend>
+      <div class="chip-row" aria-label="Choose up to two strains">
+        {% assign strains = 'Green,Red,White,Yellow' | split: ',' %}
+        {% for s in strains %}
+          <label class="chip">
+            <input type="checkbox" name="strain" value="{{ s }}">
+            {{ s }}
+          </label>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="properties[Strain]" id="prop-strain" value="">
+    </fieldset>
 
-      {%- comment -%} Quantity + variant id + submit {%- endcomment -%}
-      <div class="wtf-db__buy" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
-        <div>
-          <label for="wtf-qty-{{ section.id }}" class="visually-hidden">Quantity</label>
-          <input id="wtf-qty-{{ section.id }}" type="number" name="quantity" value="1" min="1" step="1" style="width:80px;">
+    <!-- THC concentration (only when product has thc variant metafield & Gallon is selected) -->
+    {% if product.metafields.custom.thc_variant_id %}
+      <fieldset id="thc-fieldset" hidden>
+        <legend>THC concentration</legend>
+        <div class="chip-row" role="radiogroup" aria-label="THC concentration">
+          <label class="chip"><input type="radio" name="thc" value="Low">Low</label>
+          <label class="chip"><input type="radio" name="thc" value="Medium">Medium</label>
+          <label class="chip"><input type="radio" name="thc" value="High">High</label>
         </div>
+        <input type="hidden" name="properties[THC Concentration]" id="prop-thc" value="">
+      </fieldset>
+    {% endif %}
 
-        <input type="hidden" name="id" value="{{ ctx_product.selected_or_first_available_variant.id }}">
+    <!-- Flavors (category + pumps) -->
+    <fieldset>
+      <legend>Flavors</legend>
 
-        <button type="submit" class="wtf-db__submit" style="padding:.75rem 1.25rem;border:0;border-radius:999px;background:#ff6a00;color:#fff;font-weight:700;cursor:pointer;">
-          Add to cart
-        </button>
+      {% comment %} If you have a snippet with your exact lists, render it. {% endcomment %}
+      {% render 'wtf-flavor-options' %}
+      {% comment %} If that snippet is missing, the JS will still allow manual entry via the search + chips UI you can add later. {% endcomment %}
+
+      <div
+        class="pump-meta small-text"
+        id="pump-meta"
+        data-included="{{ included_pumps }}"
+        data-extra="{{ extra_pump_price }}"
+        data-maxflavors="{{ max_flavors }}"
+      >
+        Included pumps: <strong>{{ included_pumps }}</strong>. Extra pump:
+        <strong>{{ extra_pump_price | money }}</strong>.
       </div>
+      <input type="hidden" name="properties[Flavors]" id="prop-flavors" value="">
+      <input type="hidden" name="properties[Flavor Category]" id="prop-flavor-category" value="">
+      <input type="hidden" name="properties[Flavor Pump Detail]" id="prop-pumps" value="">
+    </fieldset>
 
-      {%- comment -%} Notes (optional) {%- endcomment -%}
-      <div style="margin-top:1rem;">
-        <label for="wtf-notes-{{ section.id }}" class="wtf-db__legend">Notes (optional)</label>
-        <textarea id="wtf-notes-{{ section.id }}" name="properties[Notes]" rows="2" style="width:100%;"></textarea>
+    <!-- Boosters / Sweeteners / Creamers -->
+    {% if section.settings.show_boosters %}
+      <fieldset>
+        <legend>Boosters</legend>
+        <div class="chip-row">
+          {% for b in section.blocks | where: 'type', 'booster' %}
+            <label class="chip"
+              ><input type="checkbox" name="booster" value="{{ b.settings.label | escape }}">{{ b.settings.label -}}
+            </label>
+          {% endfor %}
+        </div>
+        <input type="hidden" name="properties[Boosters]" id="prop-boosters" value="">
+      </fieldset>
+    {% endif %}
+
+    <fieldset>
+      <legend>Sweeteners</legend>
+      <div class="chip-row">
+        <label class="chip"><input type="checkbox" name="sweetener" value="Simple Syrup">Simple Syrup</label>
+        <label class="chip"><input type="checkbox" name="sweetener" value="Stevia">Stevia</label>
+        <label class="chip"
+          ><input type="checkbox" name="sweetener" value="Sugar-Free Vanilla">Sugar-Free Vanilla</label
+        >
       </div>
-    {% endform %}
-  </div>
+      <input type="hidden" name="properties[Sweeteners]" id="prop-sweeteners" value="">
+    </fieldset>
 
-  <style>
-    .wtf-db__legend{font-weight:600;margin-bottom:.25rem;display:block;}
-    .chip input{position:absolute;opacity:0;pointer-events:none;}
-    .chip span{display:inline-block;padding:.5rem .9rem;border:1px solid #ddd;border-radius:999px;cursor:pointer;}
-    .chip input:checked + span{border-color:#ff6a00;box-shadow:0 0 0 2px rgba(255,106,0,.15);}
-    .visually-hidden{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap;}
-  </style>
+    <fieldset>
+      <legend>Creamers</legend>
+      <div class="chip-row">
+        <label class="chip"><input type="checkbox" name="creamer" value="Half & Half">Half &amp; Half</label>
+        <label class="chip"><input type="checkbox" name="creamer" value="Oat Milk">Oat Milk</label>
+        <label class="chip"><input type="checkbox" name="creamer" value="Almond Milk">Almond Milk</label>
+      </div>
+      <input type="hidden" name="properties[Creamers]" id="prop-creamers" value="">
+    </fieldset>
 
-  <script>
-  (function(){
-    const root = document.getElementById('enhanced-drink-builder-{{ section.id }}');
-    if(!root) return;
+    <!-- Gallon message -->
+    <p id="gallon-note" class="small-text" hidden>
+      For Gallons of Kratom or Kava, flavors are discussed with staff at pickup.
+    </p>
 
-    const fmt = (cents) => {
-      // basic money formatter using shop currency symbol if available
-      const s = {{ cart.currency.symbol | json | default: '"$"' }};
-      const val = (cents/100).toFixed(2);
-      return s + val;
-    };
+    <!-- Submit -->
+    <button type="submit" class="btn btn-primary" id="builder-add">Add to cart</button>
 
-    // Parse variants payload
-    const payloadEl = root.querySelector('script[data-variants]');
-    const payload = payloadEl ? JSON.parse(payloadEl.textContent) : null;
-    if(!payload) return;
+    <!-- Helper -->
+    <p id="builder-help" class="visually-hidden">
+      Use the chips to choose options. You can select up to two strains and a limited number of flavor pumps per size.
+    </p>
+  </form>
 
-    const sizeIndex = payload.sizeIndex; // 0-based index of Size in options
-    const variants = payload.variants;
-
-    const form = root.querySelector('form[id^="wtf-product-form-"]');
-    const priceEl = root.querySelector('.wtf-db__price');
-    const upsellEl = root.querySelector('.wtf-db__upsell');
-
-    const sizeInputs = root.querySelectorAll('input[name="options[Size]"]');
-    const idInput = form.querySelector('input[name="id"]');
-    const qtyInput = form.querySelector('input[name="quantity"]');
-
-    const flavorCatRadios = root.querySelectorAll('input[name="flavor_category_choice"]');
-    const flavorSelect = root.querySelector('#wtf-flavor-{{ section.id }}');
-    const flavorCatProp = form.querySelector('input[name="properties[Flavor Category]"]');
-    const flavorProp = form.querySelector('input[name="properties[Flavor]"]');
-
-    const boostersChecks = root.querySelectorAll('.wtf-boosters');
-    const sweetenersChecks = root.querySelectorAll('.wtf-sweeteners');
-    const creamersChecks = root.querySelectorAll('.wtf-creamers');
-    const boostersProp = form.querySelector('input[name="properties[Boosters]"]');
-    const sweetenersProp = form.querySelector('input[name="properties[Sweeteners]"]');
-    const creamersProp = form.querySelector('input[name="properties[Creamers]"]');
-
-    const thcWrap = root.querySelector('[data-thc-wrap]');
-    const thcSelect = root.querySelector('#wtf-thc-{{ section.id }}');
-    const thcProp = form.querySelector('input[name="properties[THC Concentration]"]');
-
-    const staffMsg = root.querySelector('[data-staff-msg]');
-    const productKind = (root.querySelector('.wtf-db')?.getAttribute('data-product-kind') || 'kratom').toLowerCase();
-
-    // Filter flavor dropdown by category
-    function filterFlavorOptions(cat) {
-      flavorSelect.value = '';
-      for (const opt of flavorSelect.querySelectorAll('option[data-cat]')) {
-        const show = opt.getAttribute('data-cat') === cat;
-        opt.hidden = !show;
-      }
-    }
-
-    // Build helper: get variant for current size
-    function getVariantForSize(size) {
-      // find first variant whose Size option equals size
-      for (const v of variants) {
-        if (sizeIndex >= 0 && v.options[sizeIndex] === size) return v;
-      }
-      // fallback to first
-      return variants[0];
-    }
-
-    // Price map for upsell deltas
-    function priceForSize(size) {
-      const v = getVariantForSize(size);
-      return v ? v.price : null;
-    }
-
-    // Update UI on size/category changes
-    function updateUI() {
-      const size = [...sizeInputs].find(i=>i.checked)?.value;
-      const v = getVariantForSize(size);
-      if (!v) return;
-
-      // Update variant id and price
-      idInput.value = v.id;
-      if (priceEl) priceEl.textContent = fmt(v.price);
-
-      // Upsell message
-      if (upsellEl) {
-        let msg = '';
-        if (size && size.toLowerCase() === 'medium') {
-          const pM = v.price;
-          const pL = priceForSize('Large');
-          if (pL && pL > pM) msg = 'Upgrade to Large for ' + fmt(pL - pM) + ' more';
-        } else if (size && size.toLowerCase() === 'large') {
-          const pL = v.price;
-          const pG = priceForSize('Gallon');
-          if (pG && pG > pL) msg = 'Upgrade to Gallon for ' + fmt(pG - pL) + ' more';
-        }
-        upsellEl.textContent = msg;
-      }
-
-      // Gallon logic
-      const isGallon = (size || '').toLowerCase() === 'gallon';
-      const isDelta9 = productKind === 'delta9';
-      if (isGallon && !isDelta9) {
-        // Kratom/Kava gallon: hide flavor select, show staff msg, clear flavor fields
-        if (flavorSelect) flavorSelect.closest('.wtf-db__flavor-select-wrap').style.display = 'none';
-        staffMsg.style.display = 'block';
-        if (thcWrap) thcWrap.style.display = 'none';
-        if (thcProp) thcProp.value = '';
-        if (flavorProp) flavorProp.value = 'Discuss with staff';
-      } else {
-        // Normal or Delta-9 gallon
-        if (flavorSelect) flavorSelect.closest('.wtf-db__flavor-select-wrap').style.display = '';
-        staffMsg.style.display = 'none';
-        if (isGallon && isDelta9) {
-          if (thcWrap) thcWrap.style.display = '';
-        } else {
-          if (thcWrap) thcWrap.style.display = 'none';
-          if (thcProp) thcProp.value = '';
-        }
-      }
-    }
-
-    // Init: flavor category default
-    filterFlavorOptions('sugar-free');
-
-    // Wire events
-    sizeInputs.forEach(r => r.addEventListener('change', updateUI));
-
-    flavorCatRadios.forEach(r => {
-      r.addEventListener('change', (e) => {
-        const cat = e.target.value; // 'sugar-free' | 'regular'
-        const catPretty = (cat === 'sugar-free') ? 'Sugar-free' : 'Regular';
-        filterFlavorOptions(cat);
-        if (flavorCatProp) flavorCatProp.value = catPretty;
-        if (flavorProp) flavorProp.value = '';
-      });
-    });
-
-    if (flavorSelect) {
-      flavorSelect.addEventListener('change', () => {
-        if (flavorProp) flavorProp.value = flavorSelect.value || '';
-      });
-    }
-
-    function syncChecksToHidden(selector, hiddenInput) {
-      const vals = [...root.querySelectorAll(selector + ':checked')].map(i => i.value);
-      hiddenInput.value = vals.join(', ');
-    }
-    const syncAllProperties = () => {
-      syncChecksToHidden('.wtf-boosters', boostersProp);
-      syncChecksToHidden('.wtf-sweeteners', sweetenersProp);
-      syncChecksToHidden('.wtf-creamers', creamersProp);
-      if (thcProp && thcSelect) thcProp.value = thcSelect.value || '';
-    };
-    boostersChecks.forEach(c => c.addEventListener('change', syncAllProperties));
-    sweetenersChecks.forEach(c => c.addEventListener('change', syncAllProperties));
-    creamersChecks.forEach(c => c.addEventListener('change', syncAllProperties));
-    if (thcSelect) thcSelect.addEventListener('change', syncAllProperties);
-
-    // Ensure properties synced on submit
-    form.addEventListener('submit', () => {
-      syncAllProperties();
-      // If flavor select is visible but empty, still pass blank (Shopify will show it as a property with no value)
-      if (flavorSelect && flavorSelect.closest('.wtf-db__flavor-select-wrap').style.display !== 'none') {
-        if (flavorProp && !flavorProp.value) flavorProp.value = flavorSelect.value || '';
-      }
-    }, { capture: true });
-
-    // Kick off first paint
-    updateUI();
-  })();
+  <!-- Pass variant data to JS -->
+  <script type="application/json" id="builder-variants-{{ product.id }}">
+    {{ product.variants | json }}
   </script>
-
-  {% schema %}
-  {
-    "name": "Enhanced Drink Builder",
-    "templates": ["product", "page"],
-    "settings": [
-      { "type": "product", "id": "product", "label": "Product (for Pages)" },
-
-      { "type": "select", "id": "product_kind", "label": "Product kind (for Gallon logic)", "default": "auto",
-        "options": [
-          { "value": "auto", "label": "Auto-detect from product tags" },
-          { "value": "kratom", "label": "Kratom" },
-          { "value": "kava", "label": "Kava" },
-          { "value": "delta9", "label": "Delta-9" }
-        ]
-      },
-
-      { "type": "header", "content": "Flavor lists" },
-      { "type": "textarea", "id": "sugar_free_flavors", "label": "Sugar-free flavors (one per line)",
-        "default": "Blackberry\nWhite Chocolate\nPumpkin Spice\nLemon Spritz\nVanilla\nMaple Bourbon Pecan\nPeach\nSimple Syrup\nCosmopolitain\nRaspberry Lemonade\nPomegranate\nBlueberry Lavender\nSalted Caramel\nRose\nMexican Chocolate"
-      },
-      { "type": "textarea", "id": "regular_flavors", "label": "Regular-sugar flavors (one per line)",
-        "default": "Caramel Apple Butter\nLime\nGrenadine\nDark Chocolate\nMargarita\nBrown Sugar\nSalted Chocolate Caramel\nHibiscus Passion Fruit\nBlueberry\nCoconut Caramel (Samoa Cookie)\nCotton Candy"
-      },
-
-      { "type": "header", "content": "Modifiers" },
-      { "type": "text", "id": "ice_levels", "label": "Ice levels (comma separated)", "default": "No Ice, Light Ice, Regular Ice, Extra Ice" },
-      { "type": "textarea", "id": "boosters", "label": "Boosters (one per line)", "default": "Kratom Shot\nKava Shot\nEnergy Shot" },
-      { "type": "textarea", "id": "sweeteners", "label": "Sweeteners (one per line)", "default": "Stevia\nCane Sugar\nAgave" },
-      { "type": "textarea", "id": "creamers", "label": "Creamers (one per line)", "default": "Half & Half\nAlmond Milk\nOat Milk\nCoconut Milk" },
-
-      { "type": "header", "content": "Delta-9 (THC) concentration options" },
-      { "type": "text", "id": "thc_concentrations", "label": "THC concentrations (comma separated)", "default": "2 mg, 5 mg, 10 mg" },
-
-      { "type": "header", "content": "Copy & UX" },
-      { "type": "text", "id": "staff_msg", "label": "Staff message for Kratom/Kava Gallon", "default": "Discuss flavor preferences with staff." }
-    ],
-    "blocks": [],
-    "presets": [{ "name": "Enhanced Drink Builder" }]
-  }
-  {% endschema %}
 </section>
+
+{% schema %}
+{
+  "name": "Enhanced Drink Builder",
+  "settings": [
+    { "type": "text", "id": "title", "label": "Heading", "default": "Build your drink" },
+    { "type": "checkbox", "id": "show_boosters", "label": "Show boosters", "default": true }
+  ],
+  "blocks": [
+    {
+      "type": "booster",
+      "name": "Booster",
+      "settings": [{ "type": "text", "id": "label", "label": "Booster label", "default": "Kratom Booster" }]
+    }
+  ],
+  "presets": [{ "name": "Enhanced Drink Builder" }]
+}
+{% endschema %}

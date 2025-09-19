@@ -31,10 +31,10 @@
 {% endschema %}
 
 {% liquid
-  assign threshold = section.settings.free_shipping_threshold | times: 100
+  assign threshold_cents = section.settings.free_shipping_threshold | times: 100
 %}
 
-<section class="wtf-cart" data-section-id="{{ section.id }}">
+<section class="wtf-cart" data-section-id="{{ section.id }}" data-threshold-cents="{{ threshold_cents }}">
   <div class="wtf-container">
     <h1 class="wtf-cart__title">Your cart</h1>
 
@@ -52,7 +52,10 @@
                 {% if item.image %}
                   <img
                     src="{{ item.image | image_url: width: 220 }}"
-                    srcset="{{ item.image | image_url: width: 220 }} 1x, {{ item.image | image_url: width: 440 }} 2x"
+                    srcset="
+                      {{ item.image | image_url: width: 220 }} 1x,
+                      {{ item.image | image_url: width: 440 }} 2x
+                    "
                     width="110"
                     height="{{ 110 | divided_by: item.image.aspect_ratio | round }}"
                     alt="{{ item.image.alt | escape }}"
@@ -66,21 +69,56 @@
               <div class="wtf-line__main">
                 <a class="wtf-line__title" href="{{ item.url }}">{{ item.product.title }}</a>
 
-                {% if item.product.has_only_default_variant == false %}
+                {% unless item.product.has_only_default_variant %}
                   <div class="wtf-line__options">
                     {% for option in item.options_with_values %}
                       <span class="wtf-badge">{{ option.name }}: {{ option.value }}</span>
                     {% endfor %}
                   </div>
-                {% endif %}
+                {% endunless %}
 
-                {% comment %} Line Item Properties (strain, flavors, etc.) {% endcomment %}
-                {% if item.properties != empty %}
+                {% if item.properties.size > 0 %}
+                  {% liquid
+                    assign preferred_order = 'Size,Strain,Flavors,Flavor Category,Flavor Pump Detail,Boosters,Sweeteners,Creamers,THC Concentration' | split: ','
+                  %}
                   <div class="wtf-line__properties">
+                    {%- comment -%}First, render preferred keys in a fixed, readable order{%- endcomment -%}
+                    {% for key in preferred_order %}
+                      {% assign val = item.properties[key] %}
+                      {% if val and val != blank and val != 'false' %}
+                        <div class="wtf-property">
+                          <strong>{{ key }}:</strong>
+                          {% if val contains '/uploads/' %}
+                            <a href="{{ val }}" target="_blank" rel="noopener">
+                              {{ val | split: '/' | last }}
+                            </a>
+                          {% else %}
+                            {{ val }}
+                          {% endif %}
+                        </div>
+                      {% endif %}
+                    {% endfor %}
+
+                    {%- comment -%}Then, render any remaining custom properties{%- endcomment -%}
                     {% for p in item.properties %}
-                      {% unless p.first contains '_' or p.last == blank or p.last == 'false' %}
-                        <div class="wtf-property"><strong>{{ p.first }}:</strong> {{ p.last }}</div>
-                      {% endunless %}
+                      {% assign first_char = p.first | slice: 0, 1 %}
+                      {% if preferred_order contains p.first
+                        or first_char == '_'
+                        or p.last == blank
+                        or p.last == 'false'
+                      %}
+                        {% continue %}
+                      {% endif %}
+                      <div class="wtf-property">
+                        <strong>{{ p.first }}:</strong>
+                        {% if p.last contains '/uploads/' %}
+                          <a href="{{ p.last }}" target="_blank" rel="noopener">
+                            {{ p.last | split: '/' | last }}
+                          </a>
+                        {% else %}
+                          {{ p.last }}
+                        {% endif %}
+                      </div>
                     {% endfor %}
                   </div>
                 {% endif %}
@@ -88,6 +126,7 @@
                 {% if section.settings.show_vendor and item.product.vendor != blank %}
                   <div class="wtf-meta">by {{ item.product.vendor }}</div>
                 {% endif %}
+
                 {% if section.settings.show_sku and item.sku != blank %}
                   <div class="wtf-meta">SKU: {{ item.sku }}</div>
                 {% endif %}
@@ -102,19 +141,18 @@
                       name="updates[]"
                       value="{{ item.quantity }}"
                       aria-label="Quantity for {{ item.product.title }}"
+                      data-index="{{ forloop.index }}"
                     >
                     <button type="button" class="wtf-qty__btn" aria-label="Increase" data-qty-inc>+</button>
                   </div>
 
-                  <button
+                  <a
                     class="wtf-remove"
-                    name="updates[]"
-                    value="0"
-                    formaction="{{ routes.cart_change_url }}?line={{ forloop.index }}"
+                    href="{{ routes.cart_change_url }}?line={{ forloop.index }}&amp;quantity=0"
                     aria-label="Remove {{ item.product.title }}"
                   >
                     Remove
-                  </button>
+                  </a>
                 </div>
               </div>
 
@@ -156,20 +194,26 @@
           </div>
 
           <div class="wtf-summary" aria-label="Order summary">
-            {% if threshold > 0 %}
-              {% assign progress = cart.total_price | times: 100 | divided_by: threshold %}
-              {% if cart.total_price >= threshold %}
-                <div class="wtf-freebar success">
-                  <span>🎉 You’ve unlocked free shipping!</span>
-                  <div class="bar"><i style="width:100%"></i></div>
-                </div>
-              {% else %}
-                {% assign remaining = threshold | minus: cart.total_price %}
-                <div class="wtf-freebar">
-                  <span>You're {{ remaining | money }} away from free shipping</span>
-                  <div class="bar"><i style="width:{{ progress | at_most: 100 }}%"></i></div>
-                </div>
-              {% endif %}
+            {% if threshold_cents > 0 %}
+              <div class="wtf-freebar-container" data-freebar-container>
+                {% assign progress = cart.total_price | times: 100.0 | divided_by: threshold_cents %}
+                {% if cart.total_price >= threshold_cents %}
+                  <div class="wtf-freebar success">
+                    <span>🎉 You’ve unlocked free shipping!</span>
+                    <div class="bar"><i style="width:100%"></i></div>
+                  </div>
+                {% else %}
+                  {% assign remaining = threshold_cents | minus: cart.total_price %}
+                  <div class="wtf-freebar">
+                    <span>
+                      You're
+                      <span data-freebar-remaining>{{ remaining | money }}</span>
+                      away from free shipping
+                    </span>
+                    <div class="bar"><i style="width:{{ progress | at_most: 100 }}%" data-freebar-progress></i></div>
+                  </div>
+                {% endif %}
+              </div>
             {% endif %}
 
             {% if section.settings.show_discount_code %}
@@ -181,7 +225,7 @@
 
             <div class="wtf-subtotal">
               <span>Subtotal</span>
-              <strong>{{ cart.total_price | money }}</strong>
+              <strong data-cart-subtotal>{{ cart.total_price | money }}</strong>
             </div>
 
             {% if cart.cart_level_discount_applications.size > 0 %}
@@ -200,124 +244,390 @@
             </div>
           </div>
         </div>
-
-        <input type="hidden" name="updates[]" value="" aria-hidden="true">
       </form>
     {% endif %}
   </div>
 </section>
 
 <style>
-  .wtf-container{max-width:1100px;margin:0 auto;padding:clamp(16px,2vw,28px)}
-  .wtf-cart__title{font-size:clamp(22px,2.4vw,32px);margin:8px 0 16px;font-weight:700}
-  .wtf-empty{text-align:center;padding:40px 0}
-  .wtf-lines{display:grid;gap:16px;margin:0;padding:0;list-style:none}
-  .wtf-line{display:grid;grid-template-columns:96px 1fr auto;gap:12px;align-items:center;padding:12px;border-radius:14px;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.06)}
-  .wtf-line__media img{display:block;border-radius:12px;background:#f6f6f6}
-  .wtf-line__title{display:block;font-weight:600;color:#111;margin-bottom:6px;text-decoration:none}
-  .wtf-line__options{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px}
-  .wtf-badge{font-size:12px;padding:4px 8px;border-radius:999px;background:#f1f1f1}
-  .wtf-line__properties{margin:4px 0 8px}
-  .wtf-property{font-size:12px;padding:2px 6px;border-radius:6px;background:#e8f4fd;color:#0066cc;margin-right:4px;margin-bottom:2px;display:inline-block}
-  .wtf-meta{font-size:12px;color:#666}
-  .wtf-line__controls{display:flex;align-items:center;gap:12px;margin-top:10px}
-  .wtf-qty{display:inline-flex;align-items:center;border:1px solid #e1e1e1;border-radius:10px;overflow:hidden}
-  .wtf-qty__btn{width:36px;height:36px;border:0;background:#fafafa;cursor:pointer;font-size:18px;line-height:0}
-  .wtf-qty__input{width:46px;height:36px;border:0;text-align:center;font-weight:600}
-  .wtf-remove{background:none;border:0;color:#888;text-decoration:underline;cursor:pointer}
-
-  .wtf-line__price{text-align:right}
-  .wtf-price__current{font-weight:700}
-  .wtf-price__compare{color:#888;margin-left:6px}
-
-  .wtf-cart__bottom{display:grid;grid-template-columns:1fr minmax(300px,360px);gap:28px;margin-top:18px}
-  .wtf-label{display:block;font-weight:600;margin-bottom:6px}
-  .wtf-note textarea{width:100%;border:1px solid #e1e1e1;border-radius:12px;padding:12px;min-height:92px}
-
+  .wtf-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: clamp(16px, 2vw, 28px);
+  }
+  .wtf-cart__title {
+    font-size: clamp(22px, 2.4vw, 32px);
+    margin: 8px 0 16px;
+    font-weight: 700;
+  }
+  .wtf-empty {
+    text-align: center;
+    padding: 40px 0;
+  }
+  .wtf-lines {
+    display: grid;
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .wtf-line {
+    display: grid;
+    grid-template-columns: 96px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+  }
+  .wtf-line__media img {
+    display: block;
+    border-radius: 12px;
+    background: #f6f6f6;
+  }
+  .wtf-line__title {
+    display: block;
+    font-weight: 600;
+    color: #111;
+    margin-bottom: 6px;
+    text-decoration: none;
+  }
+  .wtf-line__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 2px 0 8px;
+  }
+  .wtf-badge {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #f1f1f1;
+  }
+  .wtf-line__properties {
+    margin: 4px 0 8px;
+  }
+  .wtf-property {
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: #e8f4fd;
+    color: #0066cc;
+    margin-right: 4px;
+    margin-bottom: 2px;
+    display: inline-block;
+  }
+  .wtf-meta {
+    font-size: 12px;
+    color: #666;
+  }
+  .wtf-line__controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .wtf-qty {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #e1e1e1;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .wtf-qty__btn {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    background: #fafafa;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 0;
+  }
+  .wtf-qty__input {
+    width: 46px;
+    height: 36px;
+    border: 0;
+    text-align: center;
+    font-weight: 600;
+  }
+  .wtf-remove {
+    background: none;
+    border: 0;
+    color: #888;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .wtf-line__price {
+    text-align: right;
+  }
+  .wtf-price__current {
+    font-weight: 700;
+  }
+  .wtf-price__compare {
+    color: #888;
+    margin-left: 6px;
+  }
+  .wtf-cart__bottom {
+    display: grid;
+    grid-template-columns: 1fr minmax(300px, 360px);
+    gap: 28px;
+    margin-top: 18px;
+  }
+  .wtf-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .wtf-note textarea {
+    width: 100%;
+    border: 1px solid #e1e1e1;
+    border-radius: 12px;
+    padding: 12px;
+    min-height: 92px;
+  }
   .wtf-summary ul,
-  .wtf-summary li { list-style: none; padding-left: 0; margin-left: 0; }
-  .wtf-summary li::marker { content: ''; }
-  .wtf-subtotal{display:flex;justify-content:space-between;align-items:center;font-size:16px;margin:10px 0 8px}
-  .wtf-fineprint{color:#666;font-size:12px;margin:8px 0 14px}
-
-  .wtf-actions{display:flex;gap:10px;flex-wrap:wrap}
-  .btn{display:inline-flex;align-items:center;justify-content:center;height:46px;padding:0 16px;border-radius:12px;border:0;cursor:pointer;font-weight:700}
-  .btn--primary{background:#ff6600;color:#fff}
-  .btn--secondary{background:#f1f1f1;color:#111}
-
-  .wtf-discount-row{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:10px}
-  .wtf-input{height:44px;border:1px solid #e1e1e1;border-radius:10px;padding:0 12px}
-
-  .wtf-freebar{background:#fff;border:1px solid #f0f0f0;border-radius:12px;padding:10px;margin-bottom:12px}
-  .wtf-freebar span{display:block;font-size:13px;margin-bottom:6px}
-  .wtf-freebar .bar{height:8px;background:#f3f3f3;border-radius:999px;overflow:hidden}
-  .wtf-freebar .bar i{display:block;height:100%;width:0;background:#ff6600}
-  .wtf-freebar.success{border-color:#e7f7ec}
-  .wtf-freebar.success .bar i{background:#0a7a3f}
-
-  .wtf-discounts{color:#0a7a3f;font-size:13px}
-  .wtf-discounts--summary{margin-top:4px}
-
-  @media (max-width: 799px){
-    .wtf-line{grid-template-columns:78px 1fr auto}
-    .wtf-cart__bottom{grid-template-columns:1fr}
-    .wtf-actions{flex-direction:column}
-    .btn{width:100%}
+  .wtf-summary li {
+    list-style: none;
+    padding-left: 0;
+    margin-left: 0;
+  }
+  .wtf-summary li::marker {
+    content: '';
+  }
+  .wtf-subtotal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 16px;
+    margin: 10px 0 8px;
+  }
+  .wtf-fineprint {
+    color: #666;
+    font-size: 12px;
+    margin: 8px 0 14px;
+  }
+  .wtf-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 46px;
+    padding: 0 16px;
+    border-radius: 12px;
+    border: 0;
+    cursor: pointer;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .btn--primary {
+    background: #ff6600;
+    color: #fff;
+  }
+  .btn--secondary {
+    background: #f1f1f1;
+    color: #111;
+  }
+  .wtf-discount-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .wtf-input {
+    height: 44px;
+    border: 1px solid #e1e1e1;
+    border-radius: 10px;
+    padding: 0 12px;
+  }
+  .wtf-freebar {
+    background: #fff;
+    border: 1px solid #f0f0f0;
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 12px;
+  }
+  .wtf-freebar span {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  .wtf-freebar .bar {
+    height: 8px;
+    background: #f3f3f3;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .wtf-freebar .bar i {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: #ff6600;
+    transition: width 0.3s ease;
+  }
+  .wtf-freebar.success {
+    border-color: #e7f7ec;
+  }
+  .wtf-freebar.success .bar i {
+    background: #0a7a3f;
+  }
+  .wtf-discounts {
+    color: #0a7a3f;
+    font-size: 13px;
+  }
+  .wtf-discounts--summary {
+    margin-top: 4px;
+  }
+  @media (max-width: 799px) {
+    .wtf-line {
+      grid-template-columns: 78px 1fr auto;
+    }
+    .wtf-cart__bottom {
+      grid-template-columns: 1fr;
+    }
+    .wtf-actions {
+      flex-direction: column;
+    }
+    .btn {
+      width: 100%;
+    }
   }
 </style>
 
 <script>
   (function () {
-    var ROOT = window.Shopify && Shopify.routes && Shopify.routes.root ? Shopify.routes.root : '/';
-    var cartForm = document.querySelector('.wtf-cart__form');
-    if (!cartForm) return;
+    const cartRoot = document.querySelector('.wtf-cart');
+    if (!cartRoot) return;
 
-    // Qty stepper
-    cartForm.addEventListener('click', function (e) {
-      var dec = e.target.closest('[data-qty-dec]');
-      var inc = e.target.closest('[data-qty-inc]');
-      if (!dec && !inc) return;
+    const threshold = parseFloat(cartRoot.dataset.thresholdCents || 0);
+    const subtotalEl = cartRoot.querySelector('[data-cart-subtotal]');
+    const freebarContainer = cartRoot.querySelector('[data-freebar-container]');
 
-      var line = e.target.closest('.wtf-line');
-      if (!line) return;
-      var input = line.querySelector('.wtf-qty__input');
-      var current = parseInt(input.value || 0, 10);
+    let debounceTimer;
 
-      if (dec) {
-        current = Math.max(0, current - 1);
-      }
-      if (inc) {
-        current = current + 1;
-      }
-      input.value = current;
+    // --- Quantity Stepper Logic ---
+    cartRoot.addEventListener('click', (event) => {
+      const decBtn = event.target.closest('[data-qty-dec]');
+      const incBtn = event.target.closest('[data-qty-inc]');
+      if (!decBtn && !incBtn) return;
 
-      var index = line.getAttribute('data-line');
-      var form = new FormData();
-      form.set('line', index);
-      form.set('quantity', current);
+      const lineItem = event.target.closest('.wtf-line');
+      const input = lineItem.querySelector('.wtf-qty__input');
+      let currentQty = parseInt(input.value, 10);
 
-      fetch(ROOT + 'cart/change.js', {
-        method: 'POST',
-        credentials: 'same-origin',
-        body: form,
-      }).then(function () {
-        location.reload();
-      });
+      if (decBtn) currentQty = Math.max(0, currentQty - 1);
+      if (incBtn) currentQty = currentQty + 1;
+
+      input.value = currentQty;
+      updateCart(lineItem.dataset.line, currentQty);
     });
 
-    // Discount → redirect to checkout with ?discount=
-    var btn = document.getElementById('apply-discount');
-    var input = document.getElementById('discount');
-    if (btn && input) {
-      btn.addEventListener('click', function () {
-        var code = (input.value || '').trim();
-        if (!code) return input.focus();
-        var url =
-          '{{ routes.checkout_url }}' +
-          ('{{ routes.checkout_url }}'.indexOf('?') > -1 ? '&' : '?') +
-          'discount=' +
-          encodeURIComponent(code);
-        window.location.href = url;
+    function updateCart(line, quantity) {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        const body = JSON.stringify({ line, quantity });
+
+        fetch('{{ routes.cart_change_url }}', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body,
+        })
+          .then((response) => response.json())
+          .then((cart) => {
+            if (cart.status) {
+              // Handle Shopify's error response
+              console.error(cart.description);
+              return;
+            }
+            updateCartUI(cart);
+          })
+          .catch((e) => console.error(e));
+      }, 350); // Debounce to prevent rapid-fire requests
+    }
+
+    function formatMoney(cents, format) {
+      // Basic money formatter, can be replaced with a more robust one if needed
+      if (typeof cents == 'string') cents = cents.replace('.', '');
+      let value = '';
+      const placeholderRegex = /\{\{\s*(\w+)\s*\}\}/;
+      const formatString = format || '${{amount}}';
+
+      function defaultOption(opt, def) {
+        return typeof opt == 'undefined' ? def : opt;
+      }
+
+      function formatWithDelimiters(number, precision, thousands, decimal) {
+        precision = defaultOption(precision, 2);
+        thousands = defaultOption(thousands, ',');
+        decimal = defaultOption(decimal, '.');
+        if (isNaN(number) || number == null) return 0;
+        number = (number / 100.0).toFixed(precision);
+        let parts = number.split('.');
+        let dollars = parts[0].replace(/(\d)(?=(\d\d\d)+(?!\d))/g, '$1' + thousands);
+        return dollars + (parts[1] ? decimal + parts[1] : '');
+      }
+
+      switch (formatString.match(placeholderRegex)[1]) {
+        case 'amount':
+          value = formatWithDelimiters(cents, 2);
+          break;
+        case 'amount_no_decimals':
+          value = formatWithDelimiters(cents, 0);
+          break;
+        // Add other cases as needed
+      }
+      return formatString.replace(placeholderRegex, value);
+    }
+
+    function updateCartUI(cart) {
+      // Update subtotal
+      if (subtotalEl) {
+        subtotalEl.textContent = formatMoney(cart.total_price, '{{ cart.total_price | money | json | replace: '0.00', 'amount' }}');
+      }
+
+      // Update free shipping bar
+      if (freebarContainer && threshold > 0) {
+        const remainingEl = freebarContainer.querySelector('[data-freebar-remaining]');
+        const progressEl = freebarContainer.querySelector('[data-freebar-progress]');
+        const barWrapper = freebarContainer.querySelector('.wtf-freebar');
+
+        const remaining = threshold - cart.total_price;
+        if (remaining <= 0) {
+          barWrapper.classList.add('success');
+          barWrapper.querySelector('span').innerHTML = '🎉 You’ve unlocked free shipping!';
+          progressEl.style.width = '100%';
+        } else {
+          barWrapper.classList.remove('success');
+          barWrapper.querySelector('span').innerHTML = `You're <span data-freebar-remaining>${formatMoney(remaining, '{{ cart.total_price | money | json | replace: '0.00', 'amount' }}')}</span> away from free shipping`;
+          const progress = (cart.total_price / threshold) * 100;
+          progressEl.style.width = `${Math.min(progress, 100)}%`;
+        }
+      }
+      
+      // If an item was removed completely, remove it from the DOM
+      const updatedLineItem = cart.items.find(item => item.quantity > 0 && item.key === lineItemKey);
+      if (!updatedLineItem) {
+        // logic to remove the DOM element
+      }
+      // Note: A full AJAX cart would also update line item prices and discounts. This implementation focuses on the summary.
+    }
+
+
+    // --- Discount Code Redirect Logic ---
+    const applyBtn = document.getElementById('apply-discount');
+    const discountInput = document.getElementById('discount');
+    if (applyBtn && discountInput) {
+      applyBtn.addEventListener('click', () => {
+        const code = (discountInput.value || '').trim();
+        if (!code) return discountInput.focus();
+
+        const checkoutUrl = new URL('{{ routes.checkout_url }}');
+        checkoutUrl.searchParams.append('discount', code);
+        window.location.href = checkoutUrl.toString();
       });
     }
   })();
