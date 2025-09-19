@@ -365,5 +365,6 @@
       - {% render 'wtf-ajax-cart' %} and {% render 'wtf-cart-count' %} (logic centralized in assets + hydrator)
       - Extra {% render 'wtf-cart-drawer' %} at bottom (drawer already conditionally rendered at top)
     {%- endcomment -%}
+    {{ 'enhanced-drink-builder.js' | asset_url | script_tag | replace: '<script', '<script defer' }}
   </body>
 </html>
