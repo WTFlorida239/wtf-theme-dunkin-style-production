@@ -1,0 +1,49 @@
+name: Theme Check
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - '**.liquid'
+      - '**.json'
+      - '**.js'
+      - '**.css'
+      - '**.scss'
+      - 'assets/**'
+      - 'config/**'
+      - 'layout/**'
+      - 'locales/**'
+      - 'sections/**'
+      - 'snippets/**'
+      - 'templates/**'
+
+jobs:
+  theme-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: 3.1
+        bundler-cache: true
+    
+    - name: Install Theme Check
+      run: gem install theme-check
+    
+    - name: Run Theme Check
+      run: theme-check .
+      
+    - name: Comment PR
+      uses: actions/github-script@v7
+      if: failure()
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '❌ Theme Check failed. Please review the checks above and fix any issues.'
+          })
