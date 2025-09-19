@@ -118,7 +118,7 @@
       <div class="wtf-db__upsell" aria-live="polite" style="margin-top:.25rem;color:#555;"></div>
     </div>
 
-    {% form 'product', ctx_product, id: 'wtf-product-form-' | append: section.id %}
+    {% form 'product', ctx_product, id: 'wtf-product-form-' | append: section.id, data-product-form: true %}
       {%- comment -%} SIZE (maps to actual product variants) {%- endcomment -%}
       <fieldset class="wtf-db__group" style="margin-bottom:1rem;">
         <legend class="wtf-db__legend">Size</legend>
@@ -464,6 +464,12 @@
     updateUI();
   })();
   </script>
+
+  {% comment %}
+    Note: The product form above includes data-product-form which our global.js
+    uses to intercept and perform an AJAX add-to-cart. This ensures the cart
+    drawer opens without a page reload when enabled.
+  {% endcomment %}
 
   {% schema %}
   {
