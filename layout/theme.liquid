@@ -256,8 +256,8 @@
       {{- 'accessibility.skip_to_text' | t -}}
     </a>
 
-    {%- if settings.cart_type == 'drawer' -%}
-      {%- render 'cart-drawer' -%}
+    {%- if settings.enable_cart_drawer -%}
+      {%- render 'wtf-cart-drawer' -%}
     {%- endif -%}
 
     {% section 'announcement-bar' %}
