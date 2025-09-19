@@ -1,0 +1,201 @@
+{%- comment -%}
+  Real-time Price Upsell Component
+  Shows "Upgrade to Large for $X more" messaging
+{%- endcomment -%}
+
+{%- liquid
+  assign current_variant = product.selected_or_first_available_variant
+  assign upgrade_variants = product.variants | where: 'available', true
+  assign upsell_variant = null
+  assign price_difference = 0
+  
+  # Find next size up variant
+  for variant in upgrade_variants
+    if variant.price > current_variant.price
+      unless upsell_variant
+        assign upsell_variant = variant
+        assign price_difference = variant.price | minus: current_variant.price
+      else
+        if variant.price < upsell_variant.price
+          assign upsell_variant = variant
+          assign price_difference = variant.price | minus: current_variant.price
+        endif
+      endunless
+    endif
+  endfor
+-%}
+
+{%- if upsell_variant and price_difference > 0 -%}
+  <div class="price-upsell" data-price-upsell>
+    <button type="button" 
+            class="price-upsell__button"
+            data-variant-id="{{ upsell_variant.id }}"
+            data-size-upgrade="{{ upsell_variant.title }}"
+            aria-describedby="upsell-description-{{ section.id }}">
+      <span class="upsell-icon" aria-hidden="true">⬆</span>
+      <span class="upsell-text">
+        Upgrade to {{ upsell_variant.title }} for 
+        <strong class="upsell-price">{{ price_difference | money }}</strong> more
+      </span>
+      <span class="upsell-arrow" aria-hidden="true">→</span>
+    </button>
+    
+    <div id="upsell-description-{{ section.id }}" class="sr-only">
+      Upgrade from {{ current_variant.title }} to {{ upsell_variant.title }} 
+      for an additional {{ price_difference | money }}. 
+      Total price will be {{ upsell_variant.price | money }}.
+    </div>
+  </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const upsellButton = document.querySelector('[data-price-upsell] button');
+    const productForm = document.getElementById('{{ product_form_id }}');
+    const variantInput = productForm.querySelector('input[name="id"]');
+    
+    if (upsellButton && variantInput) {
+      upsellButton.addEventListener('click', function() {
+        const newVariantId = this.dataset.variantId;
+        const upgradeName = this.dataset.sizeUpgrade;
+        
+        // Update variant selection
+        variantInput.value = newVariantId;
+        
+        // Update variant picker if it exists
+        const variantPicker = productForm.querySelector('select[name="id"]');
+        if (variantPicker) {
+          variantPicker.value = newVariantId;
+          variantPicker.dispatchEvent(new Event('change'));
+        }
+        
+        // Update radio buttons if they exist
+        const radioButton = productForm.querySelector(`input[type="radio"][value="${newVariantId}"]`);
+        if (radioButton) {
+          radioButton.checked = true;
+          radioButton.dispatchEvent(new Event('change'));
+        }
+        
+        // Hide upsell after selection
+        this.closest('[data-price-upsell]').style.display = 'none';
+        
+        // Analytics
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'size_upgrade_selected', {
+            'event_category': 'Upselling',
+            'event_label': upgradeName,
+            'value': {{ price_difference | divided_by: 100.0 }},
+            'currency': '{{ cart.currency.iso_code }}'
+          });
+        }
+        
+        // Show success message
+        const successMsg = document.createElement('div');
+        successMsg.className = 'upsell-success';
+        successMsg.setAttribute('role', 'status');
+        successMsg.setAttribute('aria-live', 'polite');
+        successMsg.innerHTML = `✓ Upgraded to ${upgradeName}`;
+        this.closest('[data-price-upsell]').appendChild(successMsg);
+        
+        setTimeout(() => successMsg.remove(), 3000);
+      });
+    }
+  });
+  </script>
+
+  <style>
+  .price-upsell {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .price-upsell__button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%);
+    border: 1px solid #f59e0b;
+    border-radius: 0.5rem;
+    color: #92400e;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    min-height: 44px;
+  }
+  
+  .price-upsell__button:hover {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+  }
+  
+  .price-upsell__button:focus {
+    outline: 2px solid #FF6600;
+    outline-offset: 2px;
+  }
+  
+  .price-upsell__button:active {
+    transform: translateY(0);
+  }
+  
+  .upsell-icon {
+    font-size: 1.125rem;
+  }
+  
+  .upsell-text {
+    flex: 1;
+  }
+  
+  .upsell-price {
+    color: #FF6600;
+  }
+  
+  .price-upsell__button:hover .upsell-price {
+    color: white;
+  }
+  
+  .upsell-arrow {
+    font-size: 1.125rem;
+    transition: transform 0.2s ease;
+  }
+  
+  .price-upsell__button:hover .upsell-arrow {
+    transform: translateX(2px);
+  }
+  
+  .upsell-success {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: #dcfce7;
+    color: #166534;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    animation: slideIn 0.3s ease-out;
+  }
+  
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .price-upsell__button {
+      font-size: 0.875rem;
+      padding: 0.625rem 0.875rem;
+    }
+  }
+  </style>
+{%- endif -%}
