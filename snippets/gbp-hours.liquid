@@ -1,0 +1,124 @@
+{%- comment -%}
+  Enhanced GBP Hours with Metafield Support
+  Reads from shop metafields first, falls back to hardcoded values
+{%- endcomment -%}
+
+{%- liquid
+  # Try to read from metafields first
+  assign business_hours = shop.metafields.business_info.hours.value
+  assign business_location = shop.metafields.business_info.location.value
+  assign business_contact = shop.metafields.business_info.contact.value
+  
+  # Fallback to hardcoded values if metafields are empty
+  unless business_hours
+    assign business_hours = '{"monday":{"open":"08:00","close":"20:00","closed":false},"tuesday":{"open":"08:00","close":"20:00","closed":false},"wednesday":{"open":"08:00","close":"20:00","closed":false},"thursday":{"open":"08:00","close":"20:00","closed":false},"friday":{"open":"08:00","close":"22:00","closed":false},"saturday":{"open":"08:00","close":"22:00","closed":false},"sunday":{"open":"09:00","close":"21:00","closed":false}}'
+  endunless
+  
+  unless business_location
+    assign business_location = '{"name":"WTF | Welcome To Florida","address":"1520 SE 46th Ln Unit B, Cape Coral, FL 33904","phone":"(239) 955-0314"}'
+  endunless
+  
+  # Parse business hours JSON
+  assign hours_data = business_hours | parse_json
+  assign location_data = business_location | parse_json
+  assign contact_data = business_contact | parse_json
+  
+  # Get current day
+  assign current_day = 'now' | date: '%A' | downcase
+  assign current_time = 'now' | date: '%H:%M'
+  assign today_hours = hours_data[current_day]
+-%}
+
+<div class="gbp-hours-widget" itemscope itemtype="https://schema.org/LocalBusiness">
+  <div class="gbp-hours-header">
+    <h3 class="gbp-location-name" itemprop="name">
+      {{ location_data.name | default: "WTF | Welcome To Florida" }}
+    </h3>
+    
+    {%- render 'gbp-hours-status', 
+        today_hours: today_hours, 
+        current_time: current_time -%}
+  </div>
+  
+  <div class="gbp-hours-details" id="hours-toggle" hidden>
+    <dl class="gbp-hours-list">
+      {%- for day_data in hours_data -%}
+        {%- assign day_name = day_data[0] -%}
+        {%- assign day_info = day_data[1] -%}
+        {%- assign is_today = day_name == current_day -%}
+        
+        <div class="gbp-day-row{% if is_today %} gbp-today{% endif %}">
+          <dt class="gbp-day-name">
+            {{ day_name | capitalize }}
+            {%- if is_today -%}
+              <span class="gbp-today-indicator" aria-label="Today">•</span>
+            {%- endif -%}
+          </dt>
+          <dd class="gbp-day-hours" itemprop="openingHours" 
+              content="{{ day_name | slice: 0, 2 | upcase }} {{ day_info.open }}-{{ day_info.close }}">
+            {%- if day_info.closed -%}
+              <span class="gbp-closed">Closed</span>
+            {%- else -%}
+              <span class="gbp-hours-time">
+                {{ day_info.open | date: '%l:%M %P' | strip }} - 
+                {{ day_info.close | date: '%l:%M %P' | strip }}
+              </span>
+            {%- endif -%}
+          </dd>
+        </div>
+      {%- endfor -%}
+    </dl>
+    
+    {%- if location_data.address -%}
+      <div class="gbp-address" itemprop="address" itemscope itemtype="https://schema.org/PostalAddress">
+        <p itemprop="streetAddress">{{ location_data.address }}</p>
+      </div>
+    {%- endif -%}
+    
+    {%- if location_data.phone -%}
+      <div class="gbp-contact">
+        <a href="tel:{{ location_data.phone | replace: ' ', '' | replace: '(', '' | replace: ')', '' | replace: '-', '' }}" 
+           itemprop="telephone"
+           class="gbp-phone-link">
+          {{ location_data.phone }}
+        </a>
+      </div>
+    {%- endif -%}
+  </div>
+  
+  <button type="button" 
+          class="gbp-toggle-btn"
+          aria-expanded="false"
+          aria-controls="hours-toggle"
+          onclick="this.setAttribute('aria-expanded', this.getAttribute('aria-expanded') === 'false' ? 'true' : 'false'); document.getElementById('hours-toggle').hidden = !document.getElementById('hours-toggle').hidden;">
+    <span class="gbp-toggle-text">View Hours</span>
+    <svg class="gbp-toggle-icon" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+      <path d="M6 9L1.5 4.5 2.5 3.5 6 7 9.5 3.5 10.5 4.5 6 9Z"/>
+    </svg>
+  </button>
+</div>
+
+<script>
+  // Enhanced keyboard navigation
+  document.addEventListener('DOMContentLoaded', function() {
+    const toggleBtn = document.querySelector('.gbp-toggle-btn');
+    const hoursDetails = document.getElementById('hours-toggle');
+    
+    if (toggleBtn && hoursDetails) {
+      toggleBtn.addEventListener('click', function() {
+        const expanded = this.getAttribute('aria-expanded') === 'true';
+        this.setAttribute('aria-expanded', !expanded);
+        hoursDetails.hidden = expanded;
+        this.querySelector('.gbp-toggle-text').textContent = expanded ? 'View Hours' : 'Hide Hours';
+      });
+      
+      // Escape key support
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !hoursDetails.hidden) {
+          toggleBtn.click();
+          toggleBtn.focus();
+        }
+      });
+    }
+  });
+</script>
