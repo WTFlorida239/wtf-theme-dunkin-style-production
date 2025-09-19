@@ -1,0 +1,491 @@
+{%- comment -%}
+  Advanced Drink Modifier Chips with Real-time Pricing
+  Parameters: product, is_gallon, is_kratom, is_kava, is_delta9
+{%- endcomment -%}
+
+{%- liquid
+  # Define modifier options via metafields or defaults
+  assign ice_levels = product.metafields.modifiers.ice_levels.value | default: 'Regular Ice,Light Ice,Extra Ice,No Ice'
+  assign boosters = product.metafields.modifiers.boosters.value | default: 'Energy Boost (+$2),Focus Blend (+$3),Calm Formula (+$2)'
+  assign sweeteners = product.metafields.modifiers.sweeteners.value | default: 'Honey,Agave,Stevia,Sugar-Free Vanilla'
+  assign creamers = product.metafields.modifiers.creamers.value | default: 'Coconut Milk,Oat Milk,Almond Milk,Whole Milk'
+  assign thc_concentrations = product.metafields.modifiers.thc_levels.value | default: '2.5mg,5mg,10mg (+$5)'
+  
+  assign ice_options = ice_levels | split: ','
+  assign booster_options = boosters | split: ','
+  assign sweetener_options = sweeteners | split: ','
+  assign creamer_options = creamers | split: ','
+  assign thc_options = thc_concentrations | split: ','
+-%}
+
+<div class="drink-builder" 
+     data-drink-builder
+     aria-label="Customize your drink">
+  
+  <h3 class="drink-builder__title">Customize Your Drink</h3>
+  
+  {%- # Ice Level Selection -%}
+  <div class="modifier-group" data-modifier-group="ice">
+    <fieldset class="modifier-fieldset">
+      <legend class="modifier-legend">Ice Level</legend>
+      <div class="modifier-chips" role="group" aria-labelledby="ice-legend">
+        {%- for ice_option in ice_options -%}
+          {%- assign option_clean = ice_option | strip -%}
+          {%- assign option_id = 'ice-' | append: forloop.index -%}
+          
+          <label class="chip-label" for="{{ option_id }}">
+            <input type="radio" 
+                   id="{{ option_id }}"
+                   name="properties[Ice Level]"
+                   value="{{ option_clean }}"
+                   class="chip-input sr-only"
+                   data-drink-modifier="ice"
+                   {% if forloop.first %}checked{% endif %}>
+            <span class="chip-content">{{ option_clean }}</span>
+          </label>
+        {%- endfor -%}
+      </div>
+    </fieldset>
+  </div>
+  
+  {%- # Boosters Selection -%}
+  <div class="modifier-group" data-modifier-group="boosters">
+    <fieldset class="modifier-fieldset">
+      <legend class="modifier-legend">Add Boosters <span class="optional-text">(Optional)</span></legend>
+      <div class="modifier-chips" role="group">
+        {%- for booster_option in booster_options -%}
+          {%- assign option_parts = booster_option | strip | split: '(' -%}
+          {%- assign option_name = option_parts[0] | strip -%}
+          {%- assign option_price = option_parts[1] | replace: ')', '' | strip -%}
+          {%- assign option_id = 'booster-' | append: forloop.index -%}
+          
+          <label class="chip-label" for="{{ option_id }}">
+            <input type="checkbox" 
+                   id="{{ option_id }}"
+                   name="properties[Boosters]"
+                   value="{{ option_name }}"
+                   class="chip-input sr-only"
+                   data-drink-modifier="booster"
+                   data-price-delta="{{ option_price | replace: '$', '' | replace: '+', '' | times: 100 }}">
+            <span class="chip-content">
+              {{ option_name }}
+              {%- if option_price != blank -%}
+                <span class="chip-price">{{ option_price }}</span>
+              {%- endif -%}
+            </span>
+          </label>
+        {%- endfor -%}
+      </div>
+    </fieldset>
+  </div>
+  
+  {%- # Sweeteners Selection -%}
+  <div class="modifier-group" data-modifier-group="sweeteners">
+    <fieldset class="modifier-fieldset">
+      <legend class="modifier-legend">Sweetener <span class="optional-text">(Optional)</span></legend>
+      <div class="modifier-chips" role="group">
+        <label class="chip-label" for="sweetener-none">
+          <input type="radio" 
+                 id="sweetener-none"
+                 name="properties[Sweetener]"
+                 value="None"
+                 class="chip-input sr-only"
+                 data-drink-modifier="sweetener"
+                 checked>
+          <span class="chip-content">No Sweetener</span>
+        </label>
+        
+        {%- for sweetener_option in sweetener_options -%}
+          {%- assign option_clean = sweetener_option | strip -%}
+          {%- assign option_id = 'sweetener-' | append: forloop.index -%}
+          
+          <label class="chip-label" for="{{ option_id }}">
+            <input type="radio" 
+                   id="{{ option_id }}"
+                   name="properties[Sweetener]"
+                   value="{{ option_clean }}"
+                   class="chip-input sr-only"
+                   data-drink-modifier="sweetener">
+            <span class="chip-content">{{ option_clean }}</span>
+          </label>
+        {%- endfor -%}
+      </div>
+    </fieldset>
+  </div>
+  
+  {%- # Creamers Selection -%}
+  <div class="modifier-group" data-modifier-group="creamers">
+    <fieldset class="modifier-fieldset">
+      <legend class="modifier-legend">Milk/Creamer <span class="optional-text">(Optional)</span></legend>
+      <div class="modifier-chips" role="group">
+        <label class="chip-label" for="creamer-none">
+          <input type="radio" 
+                 id="creamer-none"
+                 name="properties[Creamer]"
+                 value="None"
+                 class="chip-input sr-only"
+                 data-drink-modifier="creamer"
+                 checked>
+          <span class="chip-content">No Creamer</span>
+        </label>
+        
+        {%- for creamer_option in creamer_options -%}
+          {%- assign option_clean = creamer_option | strip -%}
+          {%- assign option_id = 'creamer-' | append: forloop.index -%}
+          
+          <label class="chip-label" for="{{ option_id }}">
+            <input type="radio" 
+                   id="{{ option_id }}"
+                   name="properties[Creamer]"
+                   value="{{ option_clean }}"
+                   class="chip-input sr-only"
+                   data-drink-modifier="creamer">
+            <span class="chip-content">{{ option_clean }}</span>
+          </label>
+        {%- endfor -%}
+      </div>
+    </fieldset>
+  </div>
+  
+  {%- # Gallon Logic -%}
+  {%- if is_gallon -%}
+    {%- if is_kratom or is_kava -%}
+      <div class="modifier-group modifier-group--gallon-note">
+        <div class="gallon-helper-text" role="note" aria-live="polite">
+          <svg class="helper-icon" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+            <path fill="currentColor" d="M10 0C4.48 0 0 4.48 0 10s4.48 10 10 10 10-4.48 10-10S15.52 0 10 0zm1 15H9v-6h2v6zm0-8H9V5h2v2z"/>
+          </svg>
+          <p><strong>Gallon Size:</strong> Discuss flavor preferences with our staff when you visit. We'll customize it perfectly for you!</p>
+        </div>
+      </div>
+    {%- endif -%}
+    
+    {%- if is_delta9 -%}
+      <div class="modifier-group" data-modifier-group="thc">
+        <fieldset class="modifier-fieldset">
+          <legend class="modifier-legend">THC Concentration</legend>
+          <div class="modifier-chips" role="group">
+            {%- for thc_option in thc_options -%}
+              {%- assign option_parts = thc_option | strip | split: '(' -%}
+              {%- assign option_name = option_parts[0] | strip -%}
+              {%- assign option_price = option_parts[1] | replace: ')', '' | strip -%}
+              {%- assign option_id = 'thc-' | append: forloop.index -%}
+              
+              <label class="chip-label" for="{{ option_id }}">
+                <input type="radio" 
+                       id="{{ option_id }}"
+                       name="properties[THC Concentration]"
+                       value="{{ option_name }}"
+                       class="chip-input sr-only"
+                       data-drink-modifier="thc"
+                       data-price-delta="{{ option_price | replace: '$', '' | replace: '+', '' | times: 100 }}"
+                       {% if forloop.first %}checked{% endif %}>
+                <span class="chip-content">
+                  {{ option_name }}
+                  {%- if option_price != blank -%}
+                    <span class="chip-price">{{ option_price }}</span>
+                  {%- endif -%}
+                </span>
+              </label>
+            {%- endfor -%}
+          </div>
+        </fieldset>
+      </div>
+    {%- endif -%}
+  {%- endif -%}
+  
+  {%- # Price Summary -%}
+  <div class="drink-builder__summary" id="price-summary" aria-live="polite">
+    <div class="price-breakdown">
+      <div class="base-price">
+        <span class="price-label">Base Price:</span>
+        <span class="price-value" data-base-price="{{ product.selected_or_first_available_variant.price }}">
+          {{ product.selected_or_first_available_variant.price | money }}
+        </span>
+      </div>
+      <div class="modifier-price hidden" data-modifier-total>
+        <span class="price-label">Add-ons:</span>
+        <span class="price-value">+<span data-modifier-amount>$0.00</span></span>
+      </div>
+      <div class="total-price">
+        <span class="price-label">Total:</span>
+        <span class="price-value" data-total-price>
+          {{ product.selected_or_first_available_variant.price | money }}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{%- # Real-time Price Calculator -%}
+<script>
+(function() {
+  'use strict';
+  
+  const drinkBuilder = document.querySelector('[data-drink-builder]');
+  if (!drinkBuilder) return;
+  
+  const basePrice = parseInt(drinkBuilder.querySelector('[data-base-price]').dataset.basePrice);
+  const modifierTotal = drinkBuilder.querySelector('[data-modifier-total]');
+  const modifierAmount = drinkBuilder.querySelector('[data-modifier-amount]');
+  const totalPrice = drinkBuilder.querySelector('[data-total-price]');
+  
+  function updatePricing() {
+    let additionalCost = 0;
+    
+    // Calculate additional costs from checked modifiers
+    drinkBuilder.querySelectorAll('input[data-price-delta]:checked').forEach(function(input) {
+      const delta = parseInt(input.dataset.priceDelta) || 0;
+      additionalCost += delta;
+    });
+    
+    const newTotal = basePrice + additionalCost;
+    
+    // Update display
+    if (additionalCost > 0) {
+      modifierTotal.classList.remove('hidden');
+      modifierAmount.textContent = Shopify.formatMoney(additionalCost, window.theme.moneyFormat || '${{amount}}');
+    } else {
+      modifierTotal.classList.add('hidden');
+    }
+    
+    totalPrice.textContent = Shopify.formatMoney(newTotal, window.theme.moneyFormat || '${{amount}}');
+    
+    // Update main product price
+    const mainPrice = document.getElementById('price-{{ section.id }}');
+    if (mainPrice) {
+      mainPrice.querySelector('.price-item--regular').textContent = Shopify.formatMoney(newTotal, window.theme.moneyFormat || '${{amount}}');
+    }
+    
+    // Fire pricing update event
+    drinkBuilder.dispatchEvent(new CustomEvent('drinkbuilder:priceupdate', {
+      detail: { basePrice, additionalCost, totalPrice: newTotal }
+    }));
+  }
+  
+  // Listen for modifier changes
+  drinkBuilder.addEventListener('change', function(e) {
+    if (e.target.matches('[data-drink-modifier]')) {
+      updatePricing();
+      
+      // Analytics tracking
+      if (typeof gtag !== 'undefined') {
+        gtag('event', 'modifier_selected', {
+          'event_category': 'Drink Builder',
+          'event_label': e.target.dataset.drinkModifier + ':' + e.target.value,
+          'custom_map': {'dimension1': 'drink_customization'}
+        });
+      }
+    }
+  });
+  
+  // Initialize pricing
+  updatePricing();
+})();
+</script>
+
+{%- # Modifier Styles -%}
+<style>
+.drink-builder {
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  background: #fefefe;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+}
+
+.drink-builder__title {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.modifier-group {
+  margin-bottom: 1.5rem;
+}
+
+.modifier-group:last-child {
+  margin-bottom: 0;
+}
+
+.modifier-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.modifier-legend {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.9375rem;
+}
+
+.optional-text {
+  font-weight: 400;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.modifier-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip-label {
+  position: relative;
+  cursor: pointer;
+}
+
+.chip-input:focus + .chip-content {
+  outline: 2px solid #FF6600;
+  outline-offset: 2px;
+}
+
+.chip-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  background: #f9fafb;
+  border: 1px solid #d1d5db;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  min-height: 44px; /* Accessibility: minimum touch target */
+  justify-content: center;
+}
+
+.chip-input:checked + .chip-content {
+  background: #FF6600;
+  color: white;
+  border-color: #FF6600;
+}
+
+.chip-input:checked + .chip-content .chip-price {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.chip-price {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.gallon-helper-text {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 0.5rem;
+  color: #92400e;
+}
+
+.helper-icon {
+  flex-shrink: 0;
+  color: #f59e0b;
+}
+
+.gallon-helper-text p {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.drink-builder__summary {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.price-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.price-breakdown > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.base-price .price-label,
+.modifier-price .price-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.total-price {
+  padding-top: 0.5rem;
+  border-top: 1px solid #e5e7eb;
+  font-weight: 600;
+}
+
+.total-price .price-label {
+  color: #111827;
+}
+
+.total-price .price-value {
+  color: #FF6600;
+  font-size: 1.125rem;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .drink-builder {
+    padding: 1rem;
+  }
+  
+  .modifier-chips {
+    gap: 0.375rem;
+  }
+  
+  .chip-content {
+    padding: 0.4375rem 0.625rem;
+    font-size: 0.8125rem;
+  }
+  
+  .drink-builder__title {
+    font-size: 1.125rem;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .chip-input:checked + .chip-content {
+    border-width: 2px;
+  }
+  
+  .chip-input:focus + .chip-content {
+    outline-width: 3px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .chip-content {
+    transition: none;
+  }
+}
+</style>
