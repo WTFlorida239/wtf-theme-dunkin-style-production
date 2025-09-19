@@ -1,0 +1,86 @@
+{%- comment -%}
+  Utility snippet to format current open/closed status
+  Parameters:
+  - today_hours: object with open/close times for today
+  - current_time: current time in HH:MM format
+{%- endcomment -%}
+
+{%- liquid
+  assign is_open = false
+  assign next_change = ''
+  assign status_class = 'closed'
+  assign status_text = 'Closed'
+  
+  unless today_hours.closed
+    assign open_time = today_hours.open
+    assign close_time = today_hours.close
+    assign current_minutes = current_time | replace: ':', '' | times: 1
+    assign open_minutes = open_time | replace: ':', '' | times: 1
+    assign close_minutes = close_time | replace: ':', '' | times: 1
+    
+    if current_minutes >= open_minutes and current_minutes < close_minutes
+      assign is_open = true
+      assign status_class = 'open'
+      assign status_text = 'Open now'
+      assign next_change = 'Closes at ' | append: close_time | date: '%l:%M %P' | strip
+    elsif current_minutes < open_minutes
+      assign status_text = 'Opens at ' | append: open_time | date: '%l:%M %P' | strip
+    endif
+  endunless
+-%}
+
+<div class="gbp-status gbp-status--{{ status_class }}" 
+     role="status" 
+     aria-live="polite"
+     aria-label="Store hours status">
+  <span class="gbp-status-indicator" aria-hidden="true"></span>
+  <span class="gbp-status-text">{{ status_text }}</span>
+  {%- if next_change != blank -%}
+    <span class="gbp-next-change">{{ next_change }}</span>
+  {%- endif -%}
+</div>
+
+<style>
+.gbp-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.gbp-status--open {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.gbp-status--closed {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.gbp-status-indicator {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.gbp-next-change {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .gbp-status {
+    font-size: 0.8125rem;
+  }
+  
+  .gbp-next-change {
+    display: none;
+  }
+}
+</style>
