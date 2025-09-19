@@ -1,9 +1,26 @@
-# Strict but practical defaults
-fail_level: error
-include_categories:
-  - Liquid
-  - Performance
-  - Deprecated
+root: .
+
 exclude:
   - node_modules/**
-  - assets/**.map
+  - .git/**
+  - .github/**
+
+extends: 
+  - :theme_app_extension
+  - :recommended
+
+ignore:
+  - ValidHTMLTranslation
+  - TranslationKeyExists
+
+TemplateLength:
+  max_length: 500
+
+LineLength:
+  max_length: 120
+
+LiquidTag:
+  min_consecutive_statements: 5
+
+require:
+  - ./custom_checks/**
