@@ -36,6 +36,7 @@
       <span class="upsell-hint" id="builder-upsell"></span>
     </div>
 
+<<<<<<< HEAD
     <!-- Size (variants) -->
     <fieldset>
       <legend>Size</legend>
@@ -54,6 +55,26 @@
             >
             {{ v.title }}
           </label>
+=======
+    {% form 'product', ctx_product, id: 'wtf-product-form-' | append: section.id, data-product-form: true %}
+      {%- comment -%} SIZE (maps to actual product variants) {%- endcomment -%}
+      <fieldset class="wtf-db__group" style="margin-bottom:1rem;">
+        <legend class="wtf-db__legend">Size</legend>
+        <div class="wtf-db__chips" role="radiogroup" aria-label="Size">
+        {%- assign printed = false -%}
+        {%- for opt in ctx_product.options_with_values -%}
+          {%- if opt.name == 'Size' -%}
+            {%- for val in opt.values -%}
+              {%- assign chip_id = 'size-' | append: section.id | append: '-' | append: forloop.index -%}
+              <label class="chip" for="{{ chip_id }}" style="display:inline-block;margin:.25rem .5rem .25rem 0;">
+                <input type="radio" id="{{ chip_id }}" name="options[Size]" value="{{ val | escape }}"
+                  {% if forloop.first %}checked{% endif %} />
+                <span>{{ val }}</span>
+              </label>
+            {%- endfor -%}
+            {%- assign printed = true -%}
+          {%- endif -%}
+>>>>>>> origin/main
         {%- endfor -%}
       </div>
       <input type="hidden" name="properties[Size]" id="prop-size" value="">
@@ -165,6 +186,56 @@
   <script type="application/json" id="builder-variants-{{ product.id }}">
     {{ product.variants | json }}
   </script>
+<<<<<<< HEAD
+=======
+
+  {% comment %}
+    Note: The product form above includes data-product-form which our global.js
+    uses to intercept and perform an AJAX add-to-cart. This ensures the cart
+    drawer opens without a page reload when enabled.
+  {% endcomment %}
+
+  {% schema %}
+  {
+    "name": "Enhanced Drink Builder",
+    "templates": ["product", "page"],
+    "settings": [
+      { "type": "product", "id": "product", "label": "Product (for Pages)" },
+
+      { "type": "select", "id": "product_kind", "label": "Product kind (for Gallon logic)", "default": "auto",
+        "options": [
+          { "value": "auto", "label": "Auto-detect from product tags" },
+          { "value": "kratom", "label": "Kratom" },
+          { "value": "kava", "label": "Kava" },
+          { "value": "delta9", "label": "Delta-9" }
+        ]
+      },
+
+      { "type": "header", "content": "Flavor lists" },
+      { "type": "textarea", "id": "sugar_free_flavors", "label": "Sugar-free flavors (one per line)",
+        "default": "Blackberry\nWhite Chocolate\nPumpkin Spice\nLemon Spritz\nVanilla\nMaple Bourbon Pecan\nPeach\nSimple Syrup\nCosmopolitain\nRaspberry Lemonade\nPomegranate\nBlueberry Lavender\nSalted Caramel\nRose\nMexican Chocolate"
+      },
+      { "type": "textarea", "id": "regular_flavors", "label": "Regular-sugar flavors (one per line)",
+        "default": "Caramel Apple Butter\nLime\nGrenadine\nDark Chocolate\nMargarita\nBrown Sugar\nSalted Chocolate Caramel\nHibiscus Passion Fruit\nBlueberry\nCoconut Caramel (Samoa Cookie)\nCotton Candy"
+      },
+
+      { "type": "header", "content": "Modifiers" },
+      { "type": "text", "id": "ice_levels", "label": "Ice levels (comma separated)", "default": "No Ice, Light Ice, Regular Ice, Extra Ice" },
+      { "type": "textarea", "id": "boosters", "label": "Boosters (one per line)", "default": "Kratom Shot\nKava Shot\nEnergy Shot" },
+      { "type": "textarea", "id": "sweeteners", "label": "Sweeteners (one per line)", "default": "Stevia\nCane Sugar\nAgave" },
+      { "type": "textarea", "id": "creamers", "label": "Creamers (one per line)", "default": "Half & Half\nAlmond Milk\nOat Milk\nCoconut Milk" },
+
+      { "type": "header", "content": "Delta-9 (THC) concentration options" },
+      { "type": "text", "id": "thc_concentrations", "label": "THC concentrations (comma separated)", "default": "2 mg, 5 mg, 10 mg" },
+
+      { "type": "header", "content": "Copy & UX" },
+      { "type": "text", "id": "staff_msg", "label": "Staff message for Kratom/Kava Gallon", "default": "Discuss flavor preferences with staff." }
+    ],
+    "blocks": [],
+    "presets": [{ "name": "Enhanced Drink Builder" }]
+  }
+  {% endschema %}
+>>>>>>> origin/main
 </section>
 
 {% schema %}

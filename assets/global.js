@@ -190,6 +190,13 @@
     try {
       const payload = buttonToCartPayload(btn);
       await Cart.add(payload);
+      // Fetch fresh cart and dispatch standard DOM events for compatibility
+      const cart = await Cart.get();
+      document.dispatchEvent(new CustomEvent('wtf:cart:update', { detail: { cart } }));
+      document.dispatchEvent(new CustomEvent('cart:added', { detail: { cart } }));
+      // Attempt to open drawer if present
+      try { if (window.WTF_CART && typeof window.WTF_CART.open === 'function') window.WTF_CART.open(); } catch(_) {}
+
       toast('Added to cart', 'success');
       await refreshCartCount({ fallback: true });
       bus.emit('cart:add:success', payload);
@@ -214,6 +221,12 @@
     try {
       const payload = formToCartPayload(form);
       await Cart.add(payload);
+      // Fetch fresh cart and dispatch standard DOM events for compatibility
+      const cart = await Cart.get();
+      document.dispatchEvent(new CustomEvent('wtf:cart:update', { detail: { cart } }));
+      document.dispatchEvent(new CustomEvent('cart:added', { detail: { cart } }));
+      try { if (window.WTF_CART && typeof window.WTF_CART.open === 'function') window.WTF_CART.open(); } catch(_) {}
+
       toast('Added to cart', 'success');
       await refreshCartCount({ fallback: true });
       bus.emit('cart:add:success', payload);
