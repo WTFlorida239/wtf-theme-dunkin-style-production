@@ -291,18 +291,5 @@
         });
       })();
     </script>
-<<<<<<< HEAD
-=======
-
-    {# ---------- REMOVE DUPLICATES: no snippet renders or duplicate asset includes below ---------- #}
-    {%- comment -%}
-      Removed duplicates:
-      - {{ 'wtf-ajax-cart.js' | asset_url | script_tag }} (use single deferred asset include above)
-      - {{ 'wtf_flavor_system.js' | asset_url | script_tag }} (load only if needed elsewhere; not required here)
-      - {% render 'wtf-ajax-cart' %} and {% render 'wtf-cart-count' %} (logic centralized in assets + hydrator)
-      - Extra {% render 'wtf-cart-drawer' %} at bottom (drawer already conditionally rendered at top)
-    {%- endcomment -%}
-    {{ 'enhanced-drink-builder.js' | asset_url | script_tag | replace: '<script', '<script defer' }}
->>>>>>> origin/main
   </body>
 </html>
