@@ -3,85 +3,57 @@
  
   Usage: {% render 'gbp-hours', location_id: 'main' %}
  
-  Metafield Structure (namespace: business):
-  - business.location_name: "WTF | Welcome To Florida"
-  - business.location_address: "1520 SE 46th Ln Unit B Cape Coral, FL 33904"
-  - business.hours_monday: "8:00 AM - 8:00 PM"
-  - business.hours_tuesday: "8:00 AM - 8:00 PM"
-  - business.hours_wednesday: "8:00 AM - 8:00 PM"
-  - business.hours_thursday: "8:00 AM - 8:00 PM"
-  - business.hours_friday: "8:00 AM - 10:00 PM"
-  - business.hours_saturday: "8:00 AM - 10:00 PM"
-  - business.hours_sunday: "8:00 AM - 8:00 PM"
-  - business.hours_special: "Holiday hours may vary"
+  This component now reads hours from a single JSON metafield for easier management.
  
-  Fallback: Uses hardcoded hours if metafields are not available.
+  Metafield Structure (Shop Metafield):
+  - Namespace: custom
+  - Key: business_hours
+  - Type: JSON
+  - Required Schema Value:
+    [
+      {"day": "Sunday", "hours": "8:00 AM - 8:00 PM"},
+      {"day": "Monday", "hours": "8:00 AM - 8:00 PM"},
+      {"day": "Tuesday", "hours": "8:00 AM - 8:00 PM"},
+      {"day": "Wednesday", "hours": "8:00 AM - 8:00 PM"},
+      {"day": "Thursday", "hours": "8:00 AM - 8:00 PM"},
+      {"day": "Friday", "hours": "8:00 AM - 10:00 PM"},
+      {"day": "Saturday", "hours": "8:00 AM - 10:00 PM"}
+    ]
+ 
+  Fallback: Uses hardcoded grouped hours if the metafield is not set.
 {%- endcomment -%}
 
 {%- assign location_id = location_id | default: 'main' -%}
-
-{%- comment -%} Check if GBP metafields exist {%- endcomment -%}
-{%- assign has_gbp_hours = false -%}
-{%- if shop.metafields.business.hours_monday != blank -%}
-  {%- assign has_gbp_hours = true -%}
-{%- endif -%}
 
 <div class="gbp-hours" data-location="{{ location_id }}">
   <div class="gbp-hours__header">
     <h3 class="gbp-hours__title">
       📍 {{ shop.metafields.business.location_name | default: 'WTF | Welcome To Florida' }}
     </h3>
-    {%- if shop.metafields.business.location_address != blank -%}
-      <p class="gbp-hours__address">{{ shop.metafields.business.location_address }}</p>
-    {%- else -%}
-      <p class="gbp-hours__address">1520 SE 46th Ln Unit B Cape Coral, FL 33904</p>
-    {%- endif -%}
+    <p class="gbp-hours__address">{{ shop.metafields.business.location_address | default: '1520 SE 46th Ln Unit B Cape Coral, FL 33904' }}</p>
   </div>
 
   <div class="gbp-hours__schedule">
-    {%- if has_gbp_hours -%}
-      {%- comment -%} Use GBP Metafield hours {%- endcomment -%}
+    {%- assign hours_json = shop.metafields.custom.business_hours | default: '' -%}
+    {%- if hours_json != '' -%}
+      {%- comment -%} Use JSON Metafield hours {%- endcomment -%}
+      {%- assign hours = hours_json | json_parse -%}
       <div class="gbp-hours__days">
-        <div class="gbp-hours__day">
-          <span class="gbp-hours__day-name">Monday</span>
-          <span class="gbp-hours__day-time">{{ shop.metafields.business.hours_monday }}</span>
-        </div>
-        <div class="gbp-hours__day">
-          <span class="gbp-hours__day-name">Tuesday</span>
-          <span class="gbp-hours__day-time">{{ shop.metafields.business.hours_tuesday }}</span>
-        </div>
-        <div class="gbp-hours__day">
-          <span class="gbp-hours__day-name">Wednesday</span>
-          <span class="gbp-hours__day-time">{{ shop.metafields.business.hours_wednesday }}</span>
-        </div>
-        <div class="gbp-hours__day">
-          <span class="gbp-hours__day-name">Thursday</span>
-          <span class="gbp-hours__day-time">{{ shop.metafields.business.hours_thursday }}</span>
-        </div>
-        <div class="gbp-hours__day">
-          <span class="gbp-hours__day-name">Friday</span>
-          <span class="gbp-hours__day-time">{{ shop.metafields.business.hours_friday }}</span>
-        </div>
-        <div class="gbp-hours__day">
-          <span class="gbp-hours__day-name">Saturday</span>
-          <span class="gbp-hours__day-time">{{ shop.metafields.business.hours_saturday }}</span>
-        </div>
-        <div class="gbp-hours__day">
-          <span class="gbp-hours__day-name">Sunday</span>
-          <span class="gbp-hours__day-time">{{ shop.metafields.business.hours_sunday }}</span>
-        </div>
+        {%- for item in hours -%}
+          <div class="gbp-hours__day" data-day="{{ item.day | downcase }}">
+            <span class="gbp-hours__day-name">{{ item.day }}</span>
+            <span class="gbp-hours__day-time">{{ item.hours }}</span>
+          </div>
+        {%- endfor -%}
       </div>
-      {%- if shop.metafields.business.hours_special != blank -%}
-        <p class="gbp-hours__special">ℹ️ {{ shop.metafields.business.hours_special }}</p>
-      {%- endif -%}
     {%- else -%}
-      {%- comment -%} Fallback hours when GBP not configured {%- endcomment -%}
+      {%- comment -%} Fallback hours when JSON metafield is not configured {%- endcomment -%}
       <div class="gbp-hours__days">
-        <div class="gbp-hours__day">
+        <div class="gbp-hours__day" data-day="sunday,monday,tuesday,wednesday,thursday">
           <span class="gbp-hours__day-name">Sunday - Thursday</span>
           <span class="gbp-hours__day-time">8:00 AM - 8:00 PM</span>
         </div>
-        <div class="gbp-hours__day">
+        <div class="gbp-hours__day" data-day="friday,saturday">
           <span class="gbp-hours__day-name">Friday - Saturday</span>
           <span class="gbp-hours__day-time">8:00 AM - 10:00 PM</span>
         </div>
@@ -192,29 +164,32 @@
 <script>
   (function() {
     function checkStoreStatus(locationId) {
-      const statusEl = document.getElementById(`gbp-status-${locationId}`);
+      const gbpComponent = document.querySelector(`.gbp-hours[data-location="${locationId}"]`);
+      if (!gbpComponent) return;
+      const statusEl = gbpComponent.querySelector(`#gbp-status-${locationId}`);
       if (!statusEl) return;
+
+      // Dynamically build hoursData from the DOM to ensure it always matches what's displayed
+      const hoursData = {};
+      gbpComponent.querySelectorAll('.gbp-hours__day').forEach(dayEl => {
+        const dayNames = (dayEl.dataset.day || dayEl.querySelector('.gbp-hours__day-name').textContent.trim()).toLowerCase();
+        const timeRange = dayEl.querySelector('.gbp-hours__day-time').textContent.trim();
+        
+        dayNames.split(/,|-/).forEach(dayName => {
+          hoursData[dayName.trim()] = timeRange;
+        });
+      });
 
       const now = new Date();
       const day = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
       const currentTime = now.getHours() * 60 + now.getMinutes();
       
-      const hoursData = {
-        sunday:    '8:00 AM - 8:00 PM',
-        monday:    '8:00 AM - 8:00 PM',
-        tuesday:   '8:00 AM - 8:00 PM',
-        wednesday: '8:00 AM - 8:00 PM',
-        thursday:  '8:00 AM - 8:00 PM',
-        friday:    '8:00 AM - 10:00 PM',
-        saturday:  '8:00 AM - 10:00 PM'
-      };
-
       function parseTime(timeStr) {
         if (!timeStr) return 0;
         const [time, period] = timeStr.trim().split(' ');
         let [hours, minutes] = time.split(':').map(Number);
-        if (period.toLowerCase() === 'pm' && hours !== 12) hours += 12;
-        if (period.toLowerCase() === 'am' && hours === 12) hours = 0;
+        if (period && period.toLowerCase() === 'pm' && hours !== 12) hours += 12;
+        if (period && period.toLowerCase() === 'am' && hours === 12) hours = 0; // Midnight case
         return hours * 60 + (minutes || 0);
       }
 
@@ -249,6 +224,13 @@
           }
           text.style.color = '#dc3545';
         }
+      } else {
+         // Handle case where today is not in the list or is explicitly closed
+        const indicator = statusEl.querySelector('.gbp-hours__status-indicator');
+        const text = statusEl.querySelector('.gbp-hours__status-text');
+        indicator.className = 'gbp-hours__status-indicator closed';
+        text.textContent = 'Closed';
+        text.style.color = '#dc3545';
       }
     }
 
