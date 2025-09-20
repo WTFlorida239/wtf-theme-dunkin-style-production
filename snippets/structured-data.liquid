@@ -1,271 +1,232 @@
 {% comment %}
-  Snippet: structured-data.liquid
-  SEO structured data for local business, products, events, and FAQ
-  Focus on "kava bar near me" and alcohol-alternative searches
+  Additional structured data that complements enhanced-meta-tags.liquid.
+  Focused on contextual schemas (breadcrumbs, articles, collections, FAQ).
 {% endcomment %}
 
-<!-- LocalBusiness Schema -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "LocalBusiness",
-  "@id": "{{ shop.url }}#business",
-  "name": "{{ shop.name }}",
-  "alternateName": "WTF - Welcome to Florida",
-  "description": "Alcohol-free bar serving kava drinks, kratom teas, and Delta-9 beverages. The sober-curious social spot in Florida.",
-  "url": "{{ shop.url }}",
-  "telephone": "{{ shop.phone | default: '+1-555-WTF-KAVA' }}",
-  "email": "{{ shop.email }}",
-  "address": {
-    "@type": "PostalAddress",
-    "streetAddress": "{{ shop.address.street | default: '123 Main Street' }}",
-    "addressLocality": "{{ shop.address.city | default: 'Fort Lauderdale' }}",
-    "addressRegion": "FL",
-    "postalCode": "{{ shop.address.zip | default: '33301' }}",
-    "addressCountry": "US"
-  },
-  "geo": {
-    "@type": "GeoCoordinates",
-    "latitude": "26.1224",
-    "longitude": "-80.1373"
-  },
-  "image": [
-    "{{ 'wtf_storefront_hero_800x400.png' | asset_url }}",
-    "{{ 'wtf-logo.png' | asset_url }}"
-  ],
-  "logo": "{{ 'wtf-logo.png' | asset_url }}",
-  "openingHoursSpecification": [
-    {
-      "@type": "OpeningHoursSpecification",
-      "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday"],
-      "opens": "08:00",
-      "closes": "20:00"
-    },
-    {
-      "@type": "OpeningHoursSpecification",
-      "dayOfWeek": ["Friday", "Saturday"],
-      "opens": "08:00",
-      "closes": "22:00"
-    },
-    {
-      "@type": "OpeningHoursSpecification",
-      "dayOfWeek": "Sunday",
-      "opens": "08:00",
-      "closes": "20:00"
-    }
-  ],
-  "priceRange": "$$",
-  "servesCuisine": ["Kava", "Kratom", "Alcohol-Free Beverages"],
-  "acceptsReservations": "False",
-  "menu": "{{ shop.url }}/pages/menu",
-  "hasMenu": {
-    "@type": "Menu",
-    "name": "Drink Menu",
-    "description": "Kava drinks, kratom teas, Delta-9 beverages, and alcohol-free options",
-    "url": "{{ shop.url }}/pages/menu"
-  },
-  "aggregateRating": {
-    "@type": "AggregateRating",
-    "ratingValue": "4.8",
-    "reviewCount": "312"
-  },
-  "amenityFeature": [
-    {
-      "@type": "LocationFeatureSpecification",
-      "name": "Free Wi-Fi",
-      "value": true
-    },
-    {
-      "@type": "LocationFeatureSpecification",
-      "name": "Outdoor Seating",
-      "value": true
-    },
-    {
-      "@type": "LocationFeatureSpecification",
-      "name": "Live Music",
-      "value": true
-    }
-  ],
-  "keywords": "kava bar near me, kratom tea shop, alcohol-free bar, sober bar florida, kava lounge, kratom cafe, delta-9 drinks, alcohol alternative, sober curious, wellness drinks",
-  "sameAs": [
-    "https://www.facebook.com/people/WTF-Welcome-to-Florida/61566655386481/",
-    "https://www.instagram.com/wtfswagbrand/",
-    "https://www.tiktok.com/@wtfswagbrand"
-  ]
-}
-</script>
+{%- liquid
+  assign breadcrumb_collection = collection
+  if breadcrumb_collection == blank and product and product.collections_count > 0
+    assign breadcrumb_collection = product.collections.first
+  endif
+  assign is_page_template = template contains 'page'
+  assign is_article_template = template contains 'article'
+  assign is_collection_template = template contains 'collection'
+  assign is_product_template = template contains 'product'
+-%}
 
-<!-- Product Schema (for current product page) -->
-{% if template contains 'product' %}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Product",
-  "name": "{{ product.title }}",
-  "description": "{{ product.description | strip_html | truncate: 160 }}",
-  "image": [
-    {% for image in product.images limit: 3 %}
-      "{{ image | image_url }}"{% unless forloop.last %},{% endunless %}
-    {% endfor %}
-  ],
-  "brand": {
-    "@type": "Brand",
-    "name": "{{ shop.name }}"
-  },
-  "offers": {
-    "@type": "Offer",
-    "url": "{{ shop.url }}{{ product.url }}",
-    "priceCurrency": "{{ shop.currency }}",
-    "price": "{{ product.price | money_without_currency }}",
-    "priceValidUntil": "{{ 'now' | date: '%Y' | plus: 1 }}-12-31",
-    "availability": "{% if product.available %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
-    "seller": {
-      "@type": "LocalBusiness",
-      "@id": "{{ shop.url }}#business"
-    }
-  },
-  {% if product.metafields.reviews.rating %}
-  "aggregateRating": {
-    "@type": "AggregateRating",
-    "ratingValue": "{{ product.metafields.reviews.rating }}",
-    "reviewCount": "{{ product.metafields.reviews.count | default: 1 }}"
-  },
-  {% endif %}
-  "category": "{{ product.type | default: 'Beverage' }}"
-}
-</script>
-{% endif %}
-
-<!-- FAQPage Schema -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "What is kava and how does it make you feel?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Kava is a traditional Pacific Island beverage made from the kava plant root. It promotes relaxation and sociability without alcohol. Many describe the feeling as calm alertness with mild euphoria."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Is kava legal in Florida?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes, kava is completely legal in Florida and throughout the United States. It's a natural, alcohol-free alternative that's been used safely for centuries."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "What's the difference between kava and kratom?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Kava promotes relaxation and social bonding, while kratom can be more energizing or sedating depending on the strain. Kava affects GABA receptors, kratom affects opioid receptors. Both are legal, natural alternatives to alcohol."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Do Delta-9 drinks get you high?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Delta-9 THC beverages contain hemp-derived THC within legal limits. They may produce mild psychoactive effects. All our Delta-9 products comply with federal regulations (<0.3% Delta-9 THC by dry weight)."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Can I drive after drinking kava?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "While kava is legal and non-intoxicating, we recommend not driving immediately after consumption as it can cause relaxation and mild sedation. Always prioritize safety and know your limits."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Do you offer alcohol-free options for sober curious people?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Absolutely! WTF is designed as an alcohol-free social space. All our drinks - kava, kratom, and Delta-9 beverages - are alcohol-free alternatives perfect for the sober curious community."
-      }
-    }
-  ]
-}
-</script>
-
-<!-- Event Schema (for events page) -->
-{% if template contains 'events' %}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "EventSeries",
-  "name": "WTF Events",
-  "description": "Live music, open mic nights, and community events at WTF Kava Bar",
-  "organizer": {
-    "@type": "LocalBusiness",
-    "@id": "{{ shop.url }}#business"
-  },
-  "location": {
-    "@type": "Place",
-    "name": "{{ shop.name }}",
-    "address": {
-      "@type": "PostalAddress",
-      "streetAddress": "{{ shop.address.street | default: '123 Main Street' }}",
-      "addressLocality": "{{ shop.address.city | default: 'Fort Lauderdale' }}",
-      "addressRegion": "FL",
-      "postalCode": "{{ shop.address.zip | default: '33301' }}",
-      "addressCountry": "US"
-    }
+{%- capture breadcrumb_items -%}
+  {
+    "@type": "ListItem",
+    "position": 1,
+    "name": {{ 'Home' | json }},
+    "item": {{ shop.url | json }}
   }
-}
-</script>
-{% endif %}
+  {%- if is_collection_template and collection -%}
+    ,{
+      "@type": "ListItem",
+      "position": 2,
+      "name": {{ collection.title | json }},
+      "item": {{ collection.url | prepend: shop.url | json }}
+    }
+  {%- elsif is_product_template and product -%}
+    {%- if breadcrumb_collection -%}
+      ,{
+        "@type": "ListItem",
+        "position": 2,
+        "name": {{ breadcrumb_collection.title | json }},
+        "item": {{ breadcrumb_collection.url | prepend: shop.url | json }}
+      },{
+        "@type": "ListItem",
+        "position": 3,
+        "name": {{ product.title | json }},
+        "item": {{ product.url | prepend: shop.url | json }}
+      }
+    {%- else -%}
+      ,{
+        "@type": "ListItem",
+        "position": 2,
+        "name": {{ product.title | json }},
+        "item": {{ product.url | prepend: shop.url | json }}
+      }
+    {%- endif -%}
+  {%- elsif is_article_template and article -%}
+    ,{
+      "@type": "ListItem",
+      "position": 2,
+      "name": {{ blog.title | json }},
+      "item": {{ blog.url | prepend: shop.url | json }}
+    },{
+      "@type": "ListItem",
+      "position": 3,
+      "name": {{ article.title | json }},
+      "item": {{ article.url | prepend: shop.url | json }}
+    }
+  {%- elsif is_page_template and page and page.url != '/' -%}
+    ,{
+      "@type": "ListItem",
+      "position": 2,
+      "name": {{ page.title | json }},
+      "item": {{ page.url | prepend: shop.url | json }}
+    }
+  {%- endif -%}
+{%- endcapture -%}
 
-<!-- BreadcrumbList Schema -->
+{%- if breadcrumb_items contains '"position": 2' -%}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
-    {
-      "@type": "ListItem",
-      "position": 1,
-      "name": "Home",
-      "item": "{{ shop.url }}"
-    }
-    {% if collection %}
-    ,{
-      "@type": "ListItem",
-      "position": 2,
-      "name": "{{ collection.title }}",
-      "item": "{{ shop.url }}{{ collection.url }}"
-    }
-    {% endif %}
-    {% if product %}
-    ,{
-      "@type": "ListItem",
-      "position": {% if collection %}3{% else %}2{% endif %},
-      "name": "{{ product.title }}",
-      "item": "{{ shop.url }}{{ product.url }}"
-    }
-    {% endif %}
+    {{ breadcrumb_items | strip_newlines }}
   ]
 }
 </script>
+{%- endif -%}
 
-<!-- WebSite Schema with SearchAction -->
+{%- if is_collection_template and collection and collection.all_products_count > 0 -%}
+  {%- assign min_price = '' -%}
+  {%- assign max_price = '' -%}
+  {%- assign offer_count = 0 -%}
+  {%- for prod in collection.products -%}
+    {%- for variant in prod.variants -%}
+      {%- assign offer_count = offer_count | plus: 1 -%}
+      {%- if min_price == '' or variant.price < min_price -%}
+        {%- assign min_price = variant.price -%}
+      {%- endif -%}
+      {%- if max_price == '' or variant.price > max_price -%}
+        {%- assign max_price = variant.price -%}
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endfor -%}
+  {%- capture collection_products -%}
+    {%- for prod in collection.products limit: 12 -%}
+      {
+        "@type": "Product",
+        "@id": {{ prod.url | prepend: shop.url | append: '#product' | json }},
+        "name": {{ prod.title | json }},
+        "url": {{ prod.url | prepend: shop.url | json }}
+      }{% unless forloop.last %},{% endunless %}
+    {%- endfor -%}
+  {%- endcapture -%}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "{{ shop.name }}",
-  "alternateName": "WTF Kava Bar",
-  "url": "{{ shop.url }}",
-  "potentialAction": {
-    "@type": "SearchAction",
-    "target": "{{ shop.url }}/search?q={search_term_string}",
-    "query-input": "required name=search_term_string"
-  }
+  "@type": "CollectionPage",
+  "name": {{ collection.title | json }},
+  "description": {{ collection.description | strip_html | truncate: 320 | json }},
+  "mainEntity": {
+    "@type": "ItemList",
+    "numberOfItems": {{ collection.all_products_count | default: collection.products_count }},
+    "itemListElement": [
+      {{ collection_products | strip_newlines }}
+    ]
+  },
+  "offers": {
+    "@type": "AggregateOffer",
+    "priceCurrency": {{ shop.currency | json }},
+    "offerCount": {{ offer_count | default: collection.all_products_count | at_least: 1 }},
+    {%- if min_price != '' -%}
+    "lowPrice": {{ min_price | money_without_currency | replace: ',', '' | json }},{%- endif -%}
+    {%- if max_price != '' -%}
+    "highPrice": {{ max_price | money_without_currency | replace: ',', '' | json }},{%- endif -%}
+    "availability": {{ 'https://schema.org/InStock' | json }}
+  },
+  "url": {{ collection.url | prepend: shop.url | json }},
+  {%- if collection.image -%}
+  "image": {{ collection.image | image_url: width: 1200 | prepend: 'https:' | json }},{%- endif -%}
+  "isPartOf": {{ shop.url | append: '#website' | json }}
 }
 </script>
+{%- endif -%}
+
+{%- if is_article_template and article -%}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "mainEntityOfPage": {{ article.url | prepend: shop.url | json }},
+  "headline": {{ article.title | json }},
+  "description": {{ article.excerpt_or_content | strip_html | truncate: 320 | json }},
+  {%- if article.image -%}
+  "image": {{ article.image | image_url: width: 1200 | prepend: 'https:' | json }},{%- endif -%}
+  "datePublished": {{ article.published_at | date: '%Y-%m-%dT%H:%M:%S%:z' | json }},
+  "dateModified": {{ article.updated_at | date: '%Y-%m-%dT%H:%M:%S%:z' | json }},
+  "author": {
+    "@type": "Person",
+    "name": {{ article.author | json }}
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": {{ shop.name | json }},
+    {%- if shop.brand.logo -%}
+    "logo": {
+      "@type": "ImageObject",
+      "url": {{ shop.brand.logo | image_url: width: 600 | prepend: 'https:' | json }}
+    }
+    {%- endif -%}
+  },
+  "keywords": {{ article.tags | join: ', ' | json }}
+}
+</script>
+{%- endif -%}
+
+{%- liquid
+  assign faq_source = blank
+  if page and page.metafields.custom.faq_json != blank
+    assign faq_source = page.metafields.custom.faq_json.value
+  elsif product and product.metafields.custom.faq_json != blank
+    assign faq_source = product.metafields.custom.faq_json.value
+  endif
+-%}
+{%- assign faq_output = '' -%}
+{%- if faq_source and faq_source.size > 0 -%}
+  {%- capture faq_output -%}
+    {%- for entry in faq_source -%}
+      {
+        "@type": "Question",
+        "name": {{ entry.question | default: entry.title | json }},
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": {{ entry.answer | default: entry.body | json }}
+        }
+      }{% unless forloop.last %},{% endunless %}
+    {%- endfor -%}
+  {%- endcapture -%}
+{%- elsif page and (page.handle contains 'faq' or page.title contains 'FAQ') -%}
+  {%- capture faq_output -%}
+    {
+      "@type": "Question",
+      "name": "What is kava and how does it make you feel?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Kava is a traditional Pacific Island beverage made from the root of the kava plant. Guests describe the feeling as relaxed focus with gentle euphoria."
+      }
+    },{
+      "@type": "Question",
+      "name": "Is kava legal in Florida?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Kava and kratom are both legal in Florida, and WTF follows all local and federal regulations for botanical beverages."
+      }
+    },{
+      "@type": "Question",
+      "name": "Do you offer alcohol-free options for sober curious people?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "All drinks at WTF are alcohol-free. Our menu focuses on kava, kratom, Delta-9 compliant beverages, and wellness-focused mocktails."
+      }
+    }
+  {%- endcapture -%}
+{%- endif -%}
+
+{%- if faq_output != '' -%}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {{ faq_output | strip_newlines }}
+  ]
+}
+</script>
+{%- endif -%}

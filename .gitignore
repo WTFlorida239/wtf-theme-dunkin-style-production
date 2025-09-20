@@ -1,0 +1,36 @@
+# Logs and runtime files
+*.log
+supervisord.pid
+supervisor.sock
+logs/
+
+# Development server files
+server_error.log
+server.log
+supervisord.log
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Node modules (if using npm for development)
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

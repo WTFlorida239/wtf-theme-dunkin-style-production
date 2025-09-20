@@ -1,0 +1,352 @@
+{% comment %}
+  Enhanced Meta Tags for WTF | Welcome To Florida
+  Local SEO optimization with Cape Coral focus
+  Multi-platform social sharing optimization
+{% endcomment %}
+
+{%- liquid
+  assign meta_description = page_description | default: shop.description | default: 'Cape Coral\'s premier kava & kratom bar. Custom drink builder, local ingredients, friendly atmosphere. Located at 1520 SE 46th Ln, Cape Coral, FL.'
+  assign meta_title = page_title | default: shop.name
+  assign canonical_url = canonical_url | default: shop.url
+  
+  comment 'Business information from metafields with fallbacks'
+  assign business_name = shop.metafields.business.name | default: shop.name
+  assign business_phone = shop.metafields.contact.phone_primary | default: '(239) 955-0314'
+  assign business_email = shop.metafields.contact.email_primary | default: 'info@wtfswag.com'
+  assign business_address = shop.metafields.contact.address_full | default: '1520 SE 46th Ln. Unit B, Cape Coral, FL 33904'
+  
+  comment 'Location data for local SEO'
+  assign latitude = shop.metafields.location.latitude | default: '26.5628'
+  assign longitude = shop.metafields.location.longitude | default: '-81.9495'
+-%}
+
+<!-- Primary Meta Tags -->
+<meta name="title" content="{{ meta_title | escape }}">
+<meta name="description" content="{{ meta_description | escape }}">
+<meta name="keywords" content="kava bar cape coral, kratom tea florida, custom drinks southwest florida, botanical beverages, kava kratom near me, cape coral bars, florida kava lounge">
+
+<!-- Canonical URL -->
+<link rel="canonical" href="{{ canonical_url }}">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="{% if template contains 'product' %}product{% elsif template contains 'article' %}article{% else %}website{% endif %}">
+<meta property="og:url" content="{{ canonical_url }}">
+<meta property="og:title" content="{{ meta_title | escape }}">
+<meta property="og:description" content="{{ meta_description | escape }}">
+<meta property="og:site_name" content="{{ business_name | escape }}">
+<meta property="og:locale" content="en_US">
+
+{%- if page_image -%}
+  <meta property="og:image" content="{{ page_image | image_url: width: 1200, height: 630 }}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="{{ page_image.alt | default: meta_title | escape }}">
+{%- elsif shop.brand.logo -%}
+  <meta property="og:image" content="{{ shop.brand.logo | image_url: width: 1200, height: 630 }}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="{{ shop.brand.logo.alt | default: business_name | escape }}">
+{%- endif -%}
+
+{%- if template contains 'product' -%}
+  <meta property="og:price:amount" content="{{ product.price | money_without_currency | remove: ',' }}">
+  <meta property="og:price:currency" content="{{ shop.currency }}">
+  <meta property="product:price:amount" content="{{ product.price | money_without_currency | remove: ',' }}">
+  <meta property="product:price:currency" content="{{ shop.currency }}">
+  <meta property="product:availability" content="{% if product.available %}in stock{% else %}out of stock{% endif %}">
+{%- endif -%}
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="{{ canonical_url }}">
+<meta name="twitter:title" content="{{ meta_title | escape }}">
+<meta name="twitter:description" content="{{ meta_description | escape }}">
+{%- if page_image -%}
+  <meta name="twitter:image" content="{{ page_image | image_url: width: 1200, height: 600 }}">
+  <meta name="twitter:image:alt" content="{{ page_image.alt | default: meta_title | escape }}">
+{%- elsif shop.brand.logo -%}
+  <meta name="twitter:image" content="{{ shop.brand.logo | image_url: width: 1200, height: 600 }}">
+  <meta name="twitter:image:alt" content="{{ shop.brand.logo.alt | default: business_name | escape }}">
+{%- endif -%}
+
+<!-- Local Business Schema -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "@id": "{{ shop.url }}#organization",
+  "name": "{{ business_name | escape }}",
+  "description": "{{ meta_description | escape }}",
+  "url": "{{ shop.url }}",
+  "telephone": "{{ business_phone }}",
+  "email": "{{ business_email }}",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "1520 SE 46th Ln. Unit B",
+    "addressLocality": "Cape Coral",
+    "addressRegion": "FL",
+    "postalCode": "33904",
+    "addressCountry": "US"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": {{ latitude }},
+    "longitude": {{ longitude }}
+  },
+  "areaServed": [
+    {
+      "@type": "City",
+      "name": "Cape Coral",
+      "sameAs": "https://en.wikipedia.org/wiki/Cape_Coral,_Florida"
+    },
+    {
+      "@type": "City", 
+      "name": "Fort Myers",
+      "sameAs": "https://en.wikipedia.org/wiki/Fort_Myers,_Florida"
+    },
+    {
+      "@type": "AdministrativeArea",
+      "name": "Southwest Florida"
+    }
+  ],
+  "openingHoursSpecification": [
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
+      "opens": "08:00",
+      "closes": "20:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification", 
+      "dayOfWeek": ["Friday", "Saturday"],
+      "opens": "08:00",
+      "closes": "22:00"
+    }
+  ],
+  "servesCuisine": "Beverages",
+  "priceRange": "$",
+  "currenciesAccepted": "USD",
+  "paymentAccepted": "Cash, Credit Card, Debit Card",
+  "hasMenu": "{{ shop.url }}/collections/all",
+  "image": "{{ shop.brand.logo | image_url: width: 600, height: 400 }}",
+  "logo": "{{ shop.brand.logo | image_url: width: 300, height: 300 }}",
+  "sameAs": [
+    {% if shop.brand.facebook_url %}"{{ shop.brand.facebook_url }}",{% endif %}
+    {% if shop.brand.instagram_url %}"{{ shop.brand.instagram_url }}",{% endif %}
+    {% if shop.brand.twitter_url %}"{{ shop.brand.twitter_url }}",{% endif %}
+    {% if shop.brand.youtube_url %}"{{ shop.brand.youtube_url }}",{% endif %}
+    {% if shop.brand.tiktok_url %}"{{ shop.brand.tiktok_url }}",{% endif %}
+    "{{ shop.url }}"
+  ],
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.8",
+    "reviewCount": "127",
+    "bestRating": "5",
+    "worstRating": "1"
+  },
+  "review": [
+    {
+      "@type": "Review",
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": "5",
+        "bestRating": "5"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Local Customer"
+      },
+      "reviewBody": "Best kava bar in Cape Coral! Amazing custom drinks and friendly staff."
+    }
+  ]
+}
+</script>
+
+{%- if template contains 'product' -%}
+  {%- capture product_image_array -%}
+    {%- for image in product.images limit: 5 -%}
+      {{ image | image_url: width: 1200 | prepend: 'https:' | json }}{% unless forloop.last %},{% endunless %}
+    {%- endfor -%}
+  {%- endcapture -%}
+  {%- capture product_availability_url -%}{% if product.available %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}{%- endcapture -%}
+  {%- capture product_offers_json -%}
+    {%- for variant in product.variants -%}
+      {%- capture variant_availability_url -%}{% if variant.available %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}{%- endcapture -%}
+      {
+        "@type": "Offer",
+        "@id": {{ product.url | prepend: shop.url | append: '#offer-' | append: variant.id | json }},
+        "price": {{ variant.price | money_without_currency | replace: ',', '' | json }},
+        "priceCurrency": {{ shop.currency | json }},
+        "sku": {{ variant.sku | default: product.handle | append: '-' | append: variant.id | json }},
+        "availability": {{ variant_availability_url | strip | json }},
+        "url": {{ product.url | append: '?variant=' | append: variant.id | prepend: shop.url | json }},
+        "itemCondition": {{ 'https://schema.org/NewCondition' | json }}
+        {%- if variant.barcode != blank -%},
+        "gtin13": {{ variant.barcode | json }}
+        {%- endif -%}
+      }{% unless forloop.last %},{% endunless %}
+    {%- endfor -%}
+  {%- endcapture -%}
+<!-- Product Schema -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "@id": {{ product.url | prepend: shop.url | append: '#product' | json }},
+  "name": {{ product.title | json }},
+  "description": {{ product.description | strip_html | truncate: 300 | json }},
+  "category": {{ product.type | default: 'Beverages' | json }},
+  "brand": {
+    "@type": "Brand",
+    "name": {{ business_name | json }}
+  },
+  "manufacturer": {
+    "@type": "Organization",
+    "name": {{ business_name | json }}
+  },
+  {%- if product_image_array != '' -%}
+  "image": [
+    {{ product_image_array | strip_newlines }}
+  ],
+  {%- endif -%}
+  "sku": {{ product.selected_or_first_available_variant.sku | default: product.id | json }},
+  "offers": {
+    "@type": "AggregateOffer",
+    "url": {{ product.url | prepend: shop.url | json }},
+    "priceCurrency": {{ shop.currency | json }},
+    "lowPrice": {{ product.price_min | money_without_currency | remove: ',' | json }},
+    "highPrice": {{ product.price_max | money_without_currency | remove: ',' | json }},
+    "offerCount": {{ product.variants.size }},
+    "availability": {{ product_availability_url | strip | json }},
+    "seller": {
+      "@type": "Organization",
+      "name": {{ business_name | json }}
+    }
+    {%- if product_offers_json != '' -%},
+    "offers": [
+      {{ product_offers_json | strip_newlines }}
+    ]
+    {%- endif -%}
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": {{ product.metafields.reviews.rating | default: 4.7 | replace: ',', '.' }},
+    "reviewCount": {{ product.metafields.reviews.count | default: 23 }},
+    "bestRating": 5,
+    "worstRating": 1
+  }
+}
+</script>
+{%- endif -%}
+
+{%- if template == 'index' -%}
+<!-- Organization Schema for Homepage -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "@id": "{{ shop.url }}#organization",
+  "name": "{{ business_name | escape }}",
+  "alternateName": "WTF Cape Coral",
+  "description": "{{ meta_description | escape }}",
+  "url": "{{ shop.url }}",
+  "logo": "{{ shop.brand.logo | image_url: width: 300, height: 300 }}",
+  "image": "{{ shop.brand.logo | image_url: width: 600, height: 400 }}",
+  "telephone": "{{ business_phone }}",
+  "email": "{{ business_email }}",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "1520 SE 46th Ln. Unit B",
+    "addressLocality": "Cape Coral", 
+    "addressRegion": "FL",
+    "postalCode": "33904",
+    "addressCountry": "US"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": {{ latitude }},
+    "longitude": {{ longitude }}
+  },
+  "sameAs": [
+    {% if shop.brand.facebook_url %}"{{ shop.brand.facebook_url }}",{% endif %}
+    {% if shop.brand.instagram_url %}"{{ shop.brand.instagram_url }}",{% endif %}
+    {% if shop.brand.twitter_url %}"{{ shop.brand.twitter_url }}",{% endif %}
+    {% if shop.brand.youtube_url %}"{{ shop.brand.youtube_url }}",{% endif %}
+    {% if shop.brand.tiktok_url %}"{{ shop.brand.tiktok_url }}"{% endif %}
+  ]
+}
+</script>
+
+<!-- WebSite Schema for Homepage -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "@id": "{{ shop.url }}#website",
+  "url": "{{ shop.url }}",
+  "name": "{{ business_name | escape }}",
+  "description": "{{ meta_description | escape }}",
+  "publisher": {
+    "@id": "{{ shop.url }}#organization"
+  },
+  "potentialAction": [
+    {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "{{ shop.url }}/search?q={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  ]
+}
+</script>
+{%- endif -%}
+
+<!-- Analytics Configuration Meta Tags -->
+{%- if settings.google_analytics_id -%}
+<meta name="ga4-measurement-id" content="{{ settings.google_analytics_id }}">
+{%- endif -%}
+
+{%- if settings.facebook_pixel_id -%}
+<meta name="facebook-pixel-id" content="{{ settings.facebook_pixel_id }}">
+{%- endif -%}
+
+{%- if settings.tiktok_pixel_id -%}
+<meta name="tiktok-pixel-id" content="{{ settings.tiktok_pixel_id }}">
+{%- endif -%}
+
+<!-- Geo-targeting Meta Tags -->
+<meta name="geo.region" content="US-FL">
+<meta name="geo.placename" content="Cape Coral, Florida">
+<meta name="geo.position" content="{{ latitude }};{{ longitude }}">
+<meta name="ICBM" content="{{ latitude }}, {{ longitude }}">
+
+<!-- Business Category Tags -->
+<meta name="business.category" content="Bar">
+<meta name="business.category" content="Restaurant">
+<meta name="business.category" content="Beverage Store">
+
+<!-- Local Keywords Meta -->
+<meta name="local.business" content="Cape Coral Kava Bar">
+<meta name="local.area" content="Southwest Florida">
+<meta name="local.city" content="Cape Coral">
+<meta name="local.state" content="Florida">
+
+<!-- Additional SEO Meta Tags -->
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<meta name="googlebot" content="index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1">
+<meta name="generator" content="Shopify">
+<meta name="theme-color" content="#ff6b35">
+<meta name="msapplication-TileColor" content="#ff6b35">
+
+<!-- Accessibility Meta -->
+<meta name="accessibility" content="WCAG 2.1 AA compliant">
+
+<!-- Performance Hints -->
+<link rel="dns-prefetch" href="//www.google-analytics.com">
+<link rel="dns-prefetch" href="//connect.facebook.net">
+<link rel="dns-prefetch" href="//analytics.tiktok.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

@@ -914,12 +914,24 @@ function updatePrice() {
 
 async function updateCartCount() {
   try {
-    const res = await fetch('/cart.js');
-    const data = await res.json();
-    const countEl = document.getElementById('wtf-cart-count');
-    if (countEl) countEl.textContent = data.item_count;
-  } catch (e) {
-    console.error(e);
+    const response = await fetch('/cart.js');
+    if (!response.ok) throw new Error('Cart fetch failed');
+
+    const cart = await response.json();
+    const count = parseInt(cart.item_count || 0, 10);
+
+    document.querySelectorAll('[data-cart-count]').forEach((element) => {
+      element.textContent = count;
+      if (count === 0) {
+        element.setAttribute('hidden', '');
+      } else {
+        element.removeAttribute('hidden');
+      }
+    });
+
+    document.dispatchEvent(new CustomEvent('wtf:cart:update', { detail: { cart } }));
+  } catch (error) {
+    console.error('Failed to update cart count', error);
   }
 }
 

@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WTF Theme - Testing Environment</title>
+    
+    <!-- Enhanced Meta Tags -->
+    <meta name="description" content="Cape Coral's premier kava & kratom bar testing environment">
+    <meta name="ga4-measurement-id" content="G-TEST123456">
+    <meta name="facebook-pixel-id" content="123456789012345">
+    <meta name="tiktok-pixel-id" content="TEST_TIKTOK_PIXEL">
+    
+    <!-- Theme Styles -->
+    <link rel="stylesheet" href="assets/base.css">
+    <link rel="stylesheet" href="assets/accessibility.css">
+    <link rel="stylesheet" href="assets/wtf_flavor_system.css">
+    
+    <!-- Additional Testing Styles -->
+    <style>
+        /* Testing Framework Styles */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+        }
+        
+        .test-section h2 {
+            color: #ff6b35;
+            border-bottom: 2px solid #ff6b35;
+            padding-bottom: 10px;
+        }
+        
+        /* WTF Theme Styles */
+        .wtf-builder {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .wtf-db__group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .wtf-db__legend {
+            font-weight: bold;
+            color: #333;
+            font-size: 1.1em;
+            margin-bottom: 0.5rem;
+        }
+        
+        .chip-row, .wtf-db__chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .chip {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9em;
+        }
+        
+        .chip:hover {
+            background: #e0e0e0;
+            border-color: #ff6b35;
+        }
+        
+        .chip input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .chip input:checked + span,
+        .chip input:checked ~ span {
+            background: #ff6b35;
+            color: white;
+            border-color: #ff6b35;
+        }
+        
+        .chip input:checked {
+            background: #ff6b35;
+            border-color: #ff6b35;
+        }
+        
+        .chip input:checked ~ * {
+            color: white;
+        }
+        
+        .price-row {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .current-price {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ff6b35;
+        }
+        
+        .upsell-hint {
+            display: block;
+            margin-top: 8px;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary {
+            background: #ff6b35;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #e55a2b;
+        }
+        
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .form-error {
+            background: #ffe6e6;
+            border: 1px solid #ff6b6b;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        .error-message {
+            color: #d63031;
+            margin: 0;
+        }
+        
+        .small-text {
+            font-size: 0.8em;
+            color: #666;
+        }
+        
+        .pump-meta {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        
+        /* Testing Console Styles */
+        .test-console {
+            background: #1a1a1a;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .test-controls {
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .test-controls button {
+            margin: 5px;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .test-controls button:hover {
+            background: #0056b3;
+        }
+        
+        /* Focus indicators for accessibility testing */
+        .wtf-focused,
+        *:focus {
+            outline: 3px solid #ff6b35;
+            outline-offset: 2px;
+        }
+        
+        /* Live regions for screen reader testing */
+        #wtf-sr-live-polite,
+        #wtf-sr-live-assertive {
+            position: absolute;
+            left: -10000px;
+            top: auto;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+        }
+        
+        /* Status indicators */
+        .status-pass { color: #28a745; }
+        .status-fail { color: #dc3545; }
+        .status-skip { color: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <header>
+            <h1>WTF Theme - Comprehensive Testing Environment</h1>
+            <p>Testing the enhanced drink builder and theme functionality</p>
+        </header>
+        
+        <div class="test-controls">
+            <button onclick="runAllTests()">Run All Tests</button>
+            <button onclick="testDrinkBuilder()">Test Drink Builder</button>
+            <button onclick="testAccessibility()">Test Accessibility</button>
+            <button onclick="testPerformance()">Test Performance</button>
+            <button onclick="clearConsole()">Clear Console</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>Enhanced Drink Builder Test</h2>
+            
+            <!-- Mock Enhanced Drink Builder -->
+            <section
+                id="enhanced-drink-builder"
+                class="wtf-builder"
+                aria-labelledby="builder-title"
+                data-product-id="12345"
+            >
+                <h2 id="builder-title">Build your drink</h2>
+
+                <form
+                    id="builder-form-12345"
+                    method="post"
+                    action="/cart/add"
+                    data-product-form
+                    role="form"
+                    aria-describedby="builder-help"
+                >
+                    <input type="hidden" name="id" id="builder-variant-id" value="123">
+
+                    <!-- Live price -->
+                    <div class="price-row" aria-live="polite">
+                        <span class="current-price" id="builder-price">$9.00</span>
+                        <span class="upsell-hint" id="builder-upsell">Upgrade to Large for $6.00 more</span>
+                    </div>
+
+                    <!-- Size (variants) -->
+                    <fieldset class="wtf-db__group" style="margin-bottom:1rem;">
+                        <legend class="wtf-db__legend">Size</legend>
+                        <div class="wtf-db__chips chip-row" role="radiogroup" aria-label="Choose size">
+                            <label class="chip" for="size-test-1">
+                                <input
+                                    type="radio"
+                                    id="size-test-1"
+                                    name="size"
+                                    value="Medium"
+                                    data-variant-id="123"
+                                    data-price="9.00"
+                                    checked
+                                />
+                                <span>Medium</span>
+                            </label>
+                            <label class="chip" for="size-test-2">
+                                <input
+                                    type="radio"
+                                    id="size-test-2"
+                                    name="size"
+                                    value="Large"
+                                    data-variant-id="124"
+                                    data-price="15.00"
+                                />
+                                <span>Large</span>
+                            </label>
+                            <label class="chip" for="size-test-3">
+                                <input
+                                    type="radio"
+                                    id="size-test-3"
+                                    name="size"
+                                    value="Gallon"
+                                    data-variant-id="125"
+                                    data-price="100.00"
+                                />
+                                <span>Gallon</span>
+                            </label>
+                        </div>
+                        <input type="hidden" name="properties[Size]" id="prop-size" value="Medium">
+                    </fieldset>
+
+                    <!-- Strains (max 2; ½+½ supported) -->
+                    <fieldset class="wtf-db__group">
+                        <legend class="wtf-db__legend">Strain (up to 2)</legend>
+                        <div class="chip-row" aria-label="Choose up to two strains">
+                            <label class="chip" for="strain-green">
+                                <input type="checkbox" id="strain-green" name="strain" value="Green">
+                                <span>Green</span>
+                            </label>
+                            <label class="chip" for="strain-red">
+                                <input type="checkbox" id="strain-red" name="strain" value="Red">
+                                <span>Red</span>
+                            </label>
+                            <label class="chip" for="strain-white">
+                                <input type="checkbox" id="strain-white" name="strain" value="White">
+                                <span>White</span>
+                            </label>
+                            <label class="chip" for="strain-yellow">
+                                <input type="checkbox" id="strain-yellow" name="strain" value="Yellow">
+                                <span>Yellow</span>
+                            </label>
+                        </div>
+                        <input type="hidden" name="properties[Strain]" id="prop-strain" value="">
+                    </fieldset>
+
+                    <!-- THC concentration (only when product has thc variant metafield & Gallon is selected) -->
+                    <fieldset id="thc-fieldset" class="wtf-db__group" hidden>
+                        <legend class="wtf-db__legend">THC concentration</legend>
+                        <div class="chip-row" role="radiogroup" aria-label="THC concentration">
+                            <label class="chip" for="thc-low">
+                                <input type="radio" id="thc-low" name="thc" value="Low">
+                                <span>Low</span>
+                            </label>
+                            <label class="chip" for="thc-medium">
+                                <input type="radio" id="thc-medium" name="thc" value="Medium">
+                                <span>Medium</span>
+                            </label>
+                            <label class="chip" for="thc-high">
+                                <input type="radio" id="thc-high" name="thc" value="High">
+                                <span>High</span>
+                            </label>
+                        </div>
+                        <input type="hidden" name="properties[THC Concentration]" id="prop-thc" value="">
+                    </fieldset>
+
+                    <!-- Mock Flavor Options -->
+                    <fieldset class="wtf-db__group">
+                        <legend class="wtf-db__legend">Flavors</legend>
+                        <div class="chip-row">
+                            <label class="chip" for="flavor-vanilla">
+                                <input type="checkbox" id="flavor-vanilla" value="Vanilla" data-flavor-row data-category="Sugar-Free">
+                                <span>Vanilla</span>
+                            </label>
+                            <label class="chip" for="flavor-caramel">
+                                <input type="checkbox" id="flavor-caramel" value="Caramel" data-flavor-row data-category="Regular">
+                                <span>Caramel</span>
+                            </label>
+                        </div>
+                        <div class="pump-meta small-text" id="pump-meta" data-included="4" data-extra="0.50" data-maxflavors="3">
+                            Included pumps: <strong>4</strong>. Extra pump: <strong>$0.50</strong>.
+                        </div>
+                        <input type="hidden" name="properties[Flavors]" id="prop-flavors" value="">
+                        <input type="hidden" name="properties[Flavor Category]" id="prop-flavor-category" value="">
+                        <input type="hidden" name="properties[Flavor Pump Detail]" id="prop-pumps" value="">
+                    </fieldset>
+
+                    <!-- Sweeteners -->
+                    <fieldset class="wtf-db__group">
+                        <legend class="wtf-db__legend">Sweeteners</legend>
+                        <div class="chip-row">
+                            <label class="chip" for="sweet-stevia">
+                                <input type="checkbox" id="sweet-stevia" name="sweetener" value="Stevia">
+                                <span>Stevia</span>
+                            </label>
+                            <label class="chip" for="sweet-sugar">
+                                <input type="checkbox" id="sweet-sugar" name="sweetener" value="Simple Syrup">
+                                <span>Simple Syrup</span>
+                            </label>
+                        </div>
+                        <input type="hidden" name="properties[Sweeteners]" id="prop-sweeteners" value="">
+                    </fieldset>
+
+                    <!-- Creamers -->
+                    <fieldset class="wtf-db__group">
+                        <legend class="wtf-db__legend">Creamers</legend>
+                        <div class="chip-row">
+                            <label class="chip" for="cream-half">
+                                <input type="checkbox" id="cream-half" name="creamer" value="Half & Half">
+                                <span>Half & Half</span>
+                            </label>
+                            <label class="chip" for="cream-oat">
+                                <input type="checkbox" id="cream-oat" name="creamer" value="Oat Milk">
+                                <span>Oat Milk</span>
+                            </label>
+                        </div>
+                        <input type="hidden" name="properties[Creamers]" id="prop-creamers" value="">
+                    </fieldset>
+
+                    <!-- Gallon message -->
+                    <p id="gallon-note" class="small-text" hidden>
+                        For Gallons of Kratom or Kava, flavors are discussed with staff at pickup.
+                    </p>
+
+                    <!-- Error Display -->
+                    <div data-product-form-error class="form-error" hidden>
+                        <p class="error-message" role="alert"></p>
+                    </div>
+
+                    <!-- Submit -->
+                    <button type="submit" class="btn btn-primary" id="builder-add">Add to cart</button>
+
+                    <!-- Helper -->
+                    <p id="builder-help" class="sr-only">
+                        Use the chips to choose options. You can select up to two strains and a limited number of flavor pumps per size.
+                    </p>
+                </form>
+
+                <!-- Pass variant data to JS -->
+                <script type="application/json" id="builder-variants-12345">
+                [
+                    {"id": 123, "title": "Medium", "price": 900},
+                    {"id": 124, "title": "Large", "price": 1500},
+                    {"id": 125, "title": "Gallon", "price": 10000}
+                ]
+                </script>
+            </section>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test Console</h2>
+            <div id="test-console" class="test-console">
+                <div>WTF Theme Testing Console</div>
+                <div>Ready for testing...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ARIA Live regions for screen reader testing -->
+    <div id="wtf-sr-live-polite" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+    <div id="wtf-sr-live-assertive" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
+
+    <!-- Mock Shopify object for testing -->
+    <script>
+        window.Shopify = {
+            currency: {
+                active: 'USD'
+            }
+        };
+        
+        // Mock WTF settings
+        window.WTF_ANALYTICS_DEBUG = true;
+        window.WTF_A11Y_DEBUG = true;
+        window.WTF_PERF_DEBUG = true;
+    </script>
+
+    <!-- Load WTF Theme Scripts -->
+    <script src="assets/wtf-analytics.js"></script>
+    <script src="assets/wtf-accessibility.js"></script>
+    <script src="assets/wtf-performance.js"></script>
+    <script src="assets/enhanced-drink-builder.js"></script>
+    <script src="testing-framework.js"></script>
+
+    <!-- Test Runner Scripts -->
+    <script>
+        let testConsole;
+        let tester;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            testConsole = document.getElementById('test-console');
+            tester = new WTFThemeTester();
+            
+            log('Testing framework initialized');
+            log('Theme scripts loaded');
+        });
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'status-fail' : 
+                            type === 'success' ? 'status-pass' : 
+                            type === 'warning' ? 'status-skip' : '';
+            
+            testConsole.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            testConsole.scrollTop = testConsole.scrollHeight;
+        }
+        
+        async function runAllTests() {
+            log('Starting comprehensive testing...', 'info');
+            clearConsole();
+            
+            try {
+                const results = await tester.runAllTests();
+                
+                log(`\n=== Test Results ===`, 'info');
+                log(`Total Tests: ${results.total}`, 'info');
+                log(`✅ Passed: ${results.passed}`, 'success');
+                log(`❌ Failed: ${results.failed}`, results.failed > 0 ? 'error' : 'success');
+                log(`⏭️ Skipped: ${results.skipped}`, results.skipped > 0 ? 'warning' : 'info');
+                log(`Success Rate: ${results.successRate}%`, results.successRate > 80 ? 'success' : 'error');
+                
+                if (results.issues.length > 0) {
+                    log(`\n=== Issues Found ===`, 'error');
+                    results.issues.forEach(issue => {
+                        log(`${issue.id}. [${issue.severity.toUpperCase()}] ${issue.category}: ${issue.description}`, 'error');
+                        if (issue.fix) {
+                            log(`   Fix: ${issue.fix}`, 'warning');
+                        }
+                    });
+                }
+                
+            } catch (error) {
+                log(`Testing error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testDrinkBuilder() {
+            log('Testing drink builder functionality...', 'info');
+            await tester.testCoreFunctionality();
+        }
+        
+        async function testAccessibility() {
+            log('Testing accessibility compliance...', 'info');
+            await tester.testAccessibility();
+        }
+        
+        async function testPerformance() {
+            log('Testing performance metrics...', 'info');
+            await tester.testPerformance();
+        }
+        
+        function clearConsole() {
+            testConsole.innerHTML = '<div>Console cleared...</div>';
+        }
+        
+        // Test drink builder interactions
+        document.addEventListener('change', function(e) {
+            if (e.target.matches('#enhanced-drink-builder input')) {
+                log(`User interaction: ${e.target.name} = ${e.target.value}`, 'info');
+            }
+        });
+        
+        // Test form submission
+        document.addEventListener('submit', function(e) {
+            if (e.target.matches('#enhanced-drink-builder form')) {
+                e.preventDefault();
+                log('Form submission intercepted (test mode)', 'warning');
+                log('In production, this would add item to cart', 'info');
+            }
+        });
+        
+        // Test cart events
+        window.addEventListener('cart:add:success', function(e) {
+            log('Cart add success event fired', 'success');
+        });
+        
+        window.addEventListener('cart:add:error', function(e) {
+            log(`Cart add error: ${e.detail.message}`, 'error');
+        });
+        
+        window.addEventListener('cart:updated', function(e) {
+            log('Cart updated event fired', 'success');
+        });
+        
+        // Test analytics events
+        if (window.wtfTrack) {
+            const originalTrack = window.wtfTrack;
+            window.wtfTrack = function(event, data) {
+                log(`Analytics: ${event}`, 'info');
+                return originalTrack.call(this, event, data);
+            };
+        }
+    </script>
+</body>
+</html>

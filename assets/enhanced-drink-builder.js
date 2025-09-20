@@ -64,7 +64,7 @@
     const strains = selAll('input[name="strain"]', root);
     const thcFieldset = sel("#thc-fieldset", root);
     const gallonNote = sel("#gallon-note", root);
-    const addToCartBtn = sel("[data-add-to-cart]", form); // AJAX button
+    const addToCartBtn = sel("#builder-add", form) || sel('button[type="submit"]', form); // AJAX button
     const errorRegion = sel("[data-product-form-error]", form); // AJAX error region
 
     const prop = {
