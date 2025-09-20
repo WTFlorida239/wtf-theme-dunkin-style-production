@@ -47,7 +47,7 @@
       <form action="{{ routes.cart_url }}" method="post" novalidate class="wtf-cart__form">
         <ul class="wtf-lines" role="list">
           {% for item in cart.items %}
-            <li class="wtf-line" data-line="{{ forloop.index }}">
+            <li class="wtf-line" data-line="{{ forloop.index }}" data-key="{{ item.key }}">
               <a class="wtf-line__media" href="{{ item.url }}">
                 {% if item.image %}
                   <img
@@ -523,10 +523,10 @@
       if (incBtn) currentQty = currentQty + 1;
 
       input.value = currentQty;
-      updateCart(lineItem.dataset.line, currentQty);
+      updateCart(lineItem.dataset.line, currentQty, lineItem.dataset.key);
     });
 
-    function updateCart(line, quantity) {
+    function updateCart(line, quantity, key) {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         const body = JSON.stringify({ line, quantity });
@@ -543,7 +543,7 @@
               console.error(cart.description);
               return;
             }
-            updateCartUI(cart);
+            updateCartUI(cart, key);
           })
           .catch((e) => console.error(e));
       }, 350); // Debounce to prevent rapid-fire requests
@@ -583,7 +583,7 @@
       return formatString.replace(placeholderRegex, value);
     }
 
-    function updateCartUI(cart) {
+    function updateCartUI(cart, itemKey) {
       // Update subtotal
       if (subtotalEl) {
         subtotalEl.textContent = formatMoney(cart.total_price, '{{ cart.total_price | money | json | replace: '0.00', 'amount' }}');
@@ -609,9 +609,19 @@
       }
       
       // If an item was removed completely, remove it from the DOM
-      const updatedLineItem = cart.items.find(item => item.quantity > 0 && item.key === lineItemKey);
-      if (!updatedLineItem) {
-        // logic to remove the DOM element
+      if (itemKey) {
+        const updatedLineItem = cart.items.find((item) => item.key === itemKey);
+        const lineElement = cartRoot.querySelector(`.wtf-line[data-key="${itemKey}"]`);
+        if (!updatedLineItem) {
+          if (lineElement) {
+            lineElement.remove();
+          }
+        } else if (lineElement) {
+          const qtyInput = lineElement.querySelector('.wtf-qty__input');
+          if (qtyInput) {
+            qtyInput.value = updatedLineItem.quantity;
+          }
+        }
       }
       // Note: A full AJAX cart would also update line item prices and discounts. This implementation focuses on the summary.
     }
