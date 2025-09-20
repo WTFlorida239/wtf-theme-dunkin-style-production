@@ -164,46 +164,77 @@
 </script>
 
 {%- if template contains 'product' -%}
+  {%- capture product_image_array -%}
+    {%- for image in product.images limit: 5 -%}
+      {{ image | image_url: width: 1200 | prepend: 'https:' | json }}{% unless forloop.last %},{% endunless %}
+    {%- endfor -%}
+  {%- endcapture -%}
+  {%- capture product_availability_url -%}{% if product.available %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}{%- endcapture -%}
+  {%- capture product_offers_json -%}
+    {%- for variant in product.variants -%}
+      {%- capture variant_availability_url -%}{% if variant.available %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}{%- endcapture -%}
+      {
+        "@type": "Offer",
+        "@id": {{ product.url | prepend: shop.url | append: '#offer-' | append: variant.id | json }},
+        "price": {{ variant.price | money_without_currency | replace: ',', '' | json }},
+        "priceCurrency": {{ shop.currency | json }},
+        "sku": {{ variant.sku | default: product.handle | append: '-' | append: variant.id | json }},
+        "availability": {{ variant_availability_url | strip | json }},
+        "url": {{ product.url | append: '?variant=' | append: variant.id | prepend: shop.url | json }},
+        "itemCondition": {{ 'https://schema.org/NewCondition' | json }}
+        {%- if variant.barcode != blank -%},
+        "gtin13": {{ variant.barcode | json }}
+        {%- endif -%}
+      }{% unless forloop.last %},{% endunless %}
+    {%- endfor -%}
+  {%- endcapture -%}
 <!-- Product Schema -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "Product",
-  "name": "{{ product.title | escape }}",
-  "description": "{{ product.description | strip_html | truncate: 300 | escape }}",
-  "category": "Beverages",
+  "@id": {{ product.url | prepend: shop.url | append: '#product' | json }},
+  "name": {{ product.title | json }},
+  "description": {{ product.description | strip_html | truncate: 300 | json }},
+  "category": {{ product.type | default: 'Beverages' | json }},
   "brand": {
     "@type": "Brand",
-    "name": "{{ business_name | escape }}"
+    "name": {{ business_name | json }}
   },
   "manufacturer": {
     "@type": "Organization",
-    "name": "{{ business_name | escape }}"
+    "name": {{ business_name | json }}
   },
+  {%- if product_image_array != '' -%}
   "image": [
-    {%- for image in product.images limit: 5 -%}
-      "{{ image | image_url: width: 800, height: 600 }}"{% unless forloop.last %},{% endunless %}
-    {%- endfor -%}
+    {{ product_image_array | strip_newlines }}
   ],
+  {%- endif -%}
+  "sku": {{ product.selected_or_first_available_variant.sku | default: product.id | json }},
   "offers": {
     "@type": "AggregateOffer",
-    "url": "{{ shop.url }}{{ product.url }}",
-    "priceCurrency": "{{ shop.currency }}",
-    "lowPrice": "{{ product.price_min | money_without_currency | remove: ',' }}",
-    "highPrice": "{{ product.price_max | money_without_currency | remove: ',' }}",
-    "offerCount": "{{ product.variants.size }}",
-    "availability": "{% if product.available %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
+    "url": {{ product.url | prepend: shop.url | json }},
+    "priceCurrency": {{ shop.currency | json }},
+    "lowPrice": {{ product.price_min | money_without_currency | remove: ',' | json }},
+    "highPrice": {{ product.price_max | money_without_currency | remove: ',' | json }},
+    "offerCount": {{ product.variants.size }},
+    "availability": {{ product_availability_url | strip | json }},
     "seller": {
       "@type": "Organization",
-      "name": "{{ business_name | escape }}"
+      "name": {{ business_name | json }}
     }
+    {%- if product_offers_json != '' -%},
+    "offers": [
+      {{ product_offers_json | strip_newlines }}
+    ]
+    {%- endif -%}
   },
   "aggregateRating": {
     "@type": "AggregateRating",
-    "ratingValue": "4.7",
-    "reviewCount": "{{ product.metafields.reviews.count | default: '23' }}",
-    "bestRating": "5",
-    "worstRating": "1"
+    "ratingValue": {{ product.metafields.reviews.rating | default: 4.7 | replace: ',', '.' }},
+    "reviewCount": {{ product.metafields.reviews.count | default: 23 }},
+    "bestRating": 5,
+    "worstRating": 1
   }
 }
 </script>
