@@ -1,22 +1,21 @@
 {%- comment -%}
-  Google Business Profile Hours Integration
-  
+  Google Business Profile Hours Integration for WTF | Welcome To Florida
+ 
   Usage: {% render 'gbp-hours', location_id: 'main' %}
-  
+ 
   Metafield Structure (namespace: business):
-  - business.hours_monday: "9:00 AM - 10:00 PM"
-  - business.hours_tuesday: "9:00 AM - 10:00 PM"
-  - business.hours_wednesday: "9:00 AM - 10:00 PM"
-  - business.hours_thursday: "9:00 AM - 10:00 PM"
-  - business.hours_friday: "9:00 AM - 11:00 PM"
-  - business.hours_saturday: "10:00 AM - 11:00 PM"
-  - business.hours_sunday: "10:00 AM - 9:00 PM"
+  - business.location_name: "WTF | Welcome To Florida"
+  - business.location_address: "1520 SE 46th Ln Unit B Cape Coral, FL 33904"
+  - business.hours_monday: "8:00 AM - 8:00 PM"
+  - business.hours_tuesday: "8:00 AM - 8:00 PM"
+  - business.hours_wednesday: "8:00 AM - 8:00 PM"
+  - business.hours_thursday: "8:00 AM - 8:00 PM"
+  - business.hours_friday: "8:00 AM - 10:00 PM"
+  - business.hours_saturday: "8:00 AM - 10:00 PM"
+  - business.hours_sunday: "8:00 AM - 8:00 PM"
   - business.hours_special: "Holiday hours may vary"
-  - business.location_name: "WTF Swag - Clearwater"
-  - business.location_address: "123 Main St, Clearwater, FL"
-  - business.location_phone: "(727) 555-0123"
-  
-  Fallback: Uses hardcoded hours if metafields not available
+ 
+  Fallback: Uses hardcoded hours if metafields are not available.
 {%- endcomment -%}
 
 {%- assign location_id = location_id | default: 'main' -%}
@@ -30,13 +29,12 @@
 <div class="gbp-hours" data-location="{{ location_id }}">
   <div class="gbp-hours__header">
     <h3 class="gbp-hours__title">
-      📍 {{ shop.metafields.business.location_name | default: 'Store Hours' }}
+      📍 {{ shop.metafields.business.location_name | default: 'WTF | Welcome To Florida' }}
     </h3>
     {%- if shop.metafields.business.location_address != blank -%}
       <p class="gbp-hours__address">{{ shop.metafields.business.location_address }}</p>
-    {%- endif -%}
-    {%- if shop.metafields.business.location_phone != blank -%}
-      <p class="gbp-hours__phone">📞 {{ shop.metafields.business.location_phone }}</p>
+    {%- else -%}
+      <p class="gbp-hours__address">1520 SE 46th Ln Unit B Cape Coral, FL 33904</p>
     {%- endif -%}
   </div>
 
@@ -80,16 +78,12 @@
       {%- comment -%} Fallback hours when GBP not configured {%- endcomment -%}
       <div class="gbp-hours__days">
         <div class="gbp-hours__day">
-          <span class="gbp-hours__day-name">Monday - Thursday</span>
-          <span class="gbp-hours__day-time">9:00 AM - 10:00 PM</span>
+          <span class="gbp-hours__day-name">Sunday - Thursday</span>
+          <span class="gbp-hours__day-time">8:00 AM - 8:00 PM</span>
         </div>
         <div class="gbp-hours__day">
           <span class="gbp-hours__day-name">Friday - Saturday</span>
-          <span class="gbp-hours__day-time">9:00 AM - 11:00 PM</span>
-        </div>
-        <div class="gbp-hours__day">
-          <span class="gbp-hours__day-name">Sunday</span>
-          <span class="gbp-hours__day-time">10:00 AM - 9:00 PM</span>
+          <span class="gbp-hours__day-time">8:00 AM - 10:00 PM</span>
         </div>
       </div>
       <p class="gbp-hours__special">ℹ️ Holiday hours may vary</p>
@@ -110,57 +104,47 @@
     padding: 1.5rem;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     margin: 1rem 0;
+    max-width: 400px;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   }
-
   .gbp-hours__header {
-    border-bottom: 2px solid #f8f9fa;
+    border-bottom: 1px solid #f1f1f1;
     padding-bottom: 1rem;
     margin-bottom: 1rem;
   }
-
   .gbp-hours__title {
     font-size: 1.25rem;
     font-weight: 700;
     color: #333;
-    margin-bottom: 0.5rem;
+    margin: 0 0 0.5rem 0;
   }
-
-  .gbp-hours__address,
-  .gbp-hours__phone {
+  .gbp-hours__address {
     color: #666;
-    margin: 0.25rem 0;
+    margin: 0;
     font-size: 0.9rem;
   }
-
   .gbp-hours__days {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
   }
-
   .gbp-hours__day {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     padding: 0.5rem;
     background: #f8f9fa;
     border-radius: 8px;
     transition: background 0.2s ease;
   }
-
-  .gbp-hours__day:hover {
-    background: #e9ecef;
-  }
-
   .gbp-hours__day-name {
     font-weight: 600;
     color: #495057;
   }
-
   .gbp-hours__day-time {
-    color: #28a745;
+    color: #333;
     font-weight: 500;
   }
-
   .gbp-hours__special {
     margin-top: 1rem;
     padding: 0.75rem;
@@ -168,130 +152,110 @@
     border-radius: 8px;
     color: #856404;
     font-size: 0.9rem;
+    text-align: center;
   }
-
   .gbp-hours__status {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
     margin-top: 1rem;
     padding: 0.75rem;
     background: #f8f9fa;
     border-radius: 8px;
   }
-
   .gbp-hours__status-indicator {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: #ffc107;
-    animation: pulse 2s infinite;
+    background: #ffc107; /* Yellow for loading */
+    flex-shrink: 0;
   }
-
   .gbp-hours__status-indicator.open {
     background: #28a745;
+    animation: pulse 2s infinite;
   }
-
   .gbp-hours__status-indicator.closed {
     background: #dc3545;
-    animation: none;
   }
-
   .gbp-hours__status-text {
     font-size: 0.9rem;
+    font-weight: 500;
     color: #495057;
   }
-
   @keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
-  }
-
-  @media (max-width: 768px) {
-    .gbp-hours {
-      padding: 1rem;
-    }
-
-    .gbp-hours__day {
-      font-size: 0.9rem;
-    }
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
   }
 </style>
 
 <script>
   (function() {
-    // Check if store is currently open
     function checkStoreStatus(locationId) {
-      const statusEl = document.getElementById('gbp-status-' + locationId);
+      const statusEl = document.getElementById(`gbp-status-${locationId}`);
       if (!statusEl) return;
 
       const now = new Date();
       const day = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
       const currentTime = now.getHours() * 60 + now.getMinutes();
-
-      // Get hours from DOM or use defaults
+      
       const hoursData = {
-        monday: '9:00 AM - 10:00 PM',
-        tuesday: '9:00 AM - 10:00 PM',
-        wednesday: '9:00 AM - 10:00 PM',
-        thursday: '9:00 AM - 10:00 PM',
-        friday: '9:00 AM - 11:00 PM',
-        saturday: '10:00 AM - 11:00 PM',
-        sunday: '10:00 AM - 9:00 PM'
+        sunday:    '8:00 AM - 8:00 PM',
+        monday:    '8:00 AM - 8:00 PM',
+        tuesday:   '8:00 AM - 8:00 PM',
+        wednesday: '8:00 AM - 8:00 PM',
+        thursday:  '8:00 AM - 8:00 PM',
+        friday:    '8:00 AM - 10:00 PM',
+        saturday:  '8:00 AM - 10:00 PM'
       };
 
-      // Parse time string to minutes
       function parseTime(timeStr) {
+        if (!timeStr) return 0;
         const [time, period] = timeStr.trim().split(' ');
-        const [hours, minutes] = time.split(':').map(Number);
-        let totalMinutes = hours * 60 + minutes;
-        if (period === 'PM' && hours !== 12) totalMinutes += 720;
-        if (period === 'AM' && hours === 12) totalMinutes = minutes;
-        return totalMinutes;
+        let [hours, minutes] = time.split(':').map(Number);
+        if (period.toLowerCase() === 'pm' && hours !== 12) hours += 12;
+        if (period.toLowerCase() === 'am' && hours === 12) hours = 0;
+        return hours * 60 + (minutes || 0);
       }
 
-      // Check current day's hours
       const todayHours = hoursData[day];
-      if (todayHours && todayHours !== 'Closed') {
+      if (todayHours && todayHours.toLowerCase() !== 'closed') {
         const [openTime, closeTime] = todayHours.split(' - ').map(parseTime);
-        const isOpen = currentTime >= openTime && currentTime <= closeTime;
+        const isOpen = currentTime >= openTime && currentTime < closeTime;
 
         const indicator = statusEl.querySelector('.gbp-hours__status-indicator');
         const text = statusEl.querySelector('.gbp-hours__status-text');
+        
+        indicator.className = 'gbp-hours__status-indicator'; // Reset classes
+        indicator.classList.add(isOpen ? 'open' : 'closed');
 
         if (isOpen) {
-          indicator.classList.add('open');
-          indicator.classList.remove('closed');
           const closingIn = closeTime - currentTime;
           if (closingIn <= 60) {
-            text.textContent = `Open now - Closing soon (${closingIn} min)`;
-            text.style.color = '#ff6b35';
+            text.textContent = `Open now · Closes in ${closingIn} min`;
+            text.style.color = '#e67e22';
           } else {
             text.textContent = 'Open now';
             text.style.color = '#28a745';
           }
         } else {
-          indicator.classList.add('closed');
-          indicator.classList.remove('open');
           if (currentTime < openTime) {
             const openingIn = openTime - currentTime;
             const hours = Math.floor(openingIn / 60);
             const mins = openingIn % 60;
-            text.textContent = `Closed - Opens in ${hours}h ${mins}m`;
+            text.textContent = `Closed · Opens in ${hours}h ${mins}m`;
           } else {
-            text.textContent = 'Closed for today';
+            text.textContent = 'Closed for the day';
           }
           text.style.color = '#dc3545';
         }
       }
     }
 
-    // Check status on load
     document.addEventListener('DOMContentLoaded', function() {
-      checkStoreStatus('{{ location_id }}');
-      // Update every minute
-      setInterval(() => checkStoreStatus('{{ location_id }}'), 60000);
+      const locationId = '{{ location_id }}';
+      checkStoreStatus(locationId);
+      setInterval(() => checkStoreStatus(locationId), 60000); // Update every minute
     });
   })();
 </script>
