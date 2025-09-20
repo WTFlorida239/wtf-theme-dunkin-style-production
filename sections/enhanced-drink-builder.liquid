@@ -1,11 +1,4 @@
 {% comment %}
-  Enhanced Drink Builder – WTF | Welcome To Florida
-  - Size: Medium, Large, Gallon
-  - Live price preview
-  - Strains: Green / Red / White / Yellow (max 2; supports ½+½)
-  - Flavors w/ pump counters + category (Regular / Sugar-Free)
-  - Gallon logic + THC selector when applicable
-  - Saves all choices as line item properties
 {% endcomment %}
 
 {% liquid
@@ -23,6 +16,7 @@
     assign builder_included_pumps = builder_product.metafields.custom.included_pumps | default: 4
     assign builder_extra_pump_price = builder_product.metafields.custom.extra_pump_price | default: 0.50
     assign builder_max_flavors = builder_product.metafields.custom.max_flavors | default: 3
+    assign builder_thc_variant_id = builder_product.metafields.custom.thc_variant_id | default: blank
 
     assign builder_size_option = blank
     for opt in builder_product.options_with_values
@@ -39,6 +33,183 @@
   endif
 %}
 
+<style>
+  #enhanced-drink-builder {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 1.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  #enhanced-drink-builder h2 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+  }
+  #enhanced-drink-builder fieldset {
+    border: none;
+    padding: 0;
+    margin: 0 0 1.5rem 0;
+  }
+  #enhanced-drink-builder legend {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    padding: 0;
+    display: block;
+    width: 100%;
+  }
+  .wtf-db__notice {
+    background-color: #fefce8;
+    color: #854d0e;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+  }
+  .price-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .current-price {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: #111827;
+  }
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    background-color: #f3f4f6;
+    border-radius: 9999px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.2s, box-shadow 0.2s;
+  }
+  .chip input[type="radio"],
+  .chip input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .chip span {
+    padding: 0.5rem 1rem;
+  }
+  .chip:has(input:checked) {
+    background-color: #3b82f6;
+    color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  .chip:has(input:disabled) {
+    background-color: #e5e7eb;
+    color: #9ca3af;
+    cursor: not-allowed;
+    text-decoration: line-through;
+  }
+  .flavor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.75rem;
+  }
+  .flavor-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+  .flavor-chip span {
+    padding: 0 0.5rem;
+    flex-grow: 1;
+    text-align: left;
+  }
+  .flavor-chip .pump-controls {
+    display: flex;
+    align-items: center;
+  }
+  .flavor-chip button {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #d1d5db;
+    background-color: white;
+    border-radius: 9999px;
+    font-weight: 600;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .flavor-chip .pump-count {
+    min-width: 24px;
+    text-align: center;
+    font-weight: 500;
+  }
+  .pump-meta {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background-color: #f9fafb;
+    border-radius: 0.5rem;
+  }
+  .btn-primary {
+    width: 100%;
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  .btn-primary:hover {
+    background-color: #1d4ed8;
+  }
+  .btn-primary:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+  }
+  .form-error {
+    background-color: #fef2f2;
+    color: #991b1b;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+  }
+  .small-text {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+  [hidden] {
+    display: none !important;
+  }
+</style>
+
 <section
   id="enhanced-drink-builder"
   class="wtf-builder"
@@ -46,6 +217,7 @@
   {% if builder_has_product %}
     data-product-id="{{ builder_product.id }}"
     data-size-position="{{ builder_size_position }}"
+    data-thc-variant-id="{{ builder_thc_variant_id }}"
   {% endif %}
 >
   <h2 id="builder-title">{{ section.settings.title | default: 'Build your drink' }}</h2>
@@ -55,203 +227,210 @@
     {%- assign extra_pump_price = builder_extra_pump_price -%}
     {%- assign max_flavors = builder_max_flavors -%}
 
-  <form
-    id="builder-form-{{ builder_product.id }}"
-    method="post"
-    action="/cart/add"
-    data-product-form
-    role="form"
-    aria-describedby="builder-help"
-  >
-    <input
-      type="hidden"
-      name="id"
-      id="builder-variant-id"
-      value="{{ builder_variant.id }}"
+    <form
+      id="builder-form-{{ builder_product.id }}"
+      method="post"
+      action="/cart/add"
+      data-product-form
+      role="form"
+      aria-describedby="builder-help"
     >
+      <input type="hidden" name="id" id="builder-variant-id" value="{{ builder_variant.id }}">
 
-    <!-- Live price -->
-    <div class="price-row" aria-live="polite">
-      <span class="current-price" id="builder-price">{{ builder_variant.price | default: builder_product.price | money }}</span>
-      <span class="upsell-hint" id="builder-upsell"></span>
-    </div>
+      <div class="price-row" aria-live="polite">
+        <span class="current-price" id="builder-price">{{ builder_variant.price | default: builder_product.price | money }}</span>
+      </div>
 
-    <!-- Size (variants) -->
-    <fieldset class="wtf-db__group" style="margin-bottom:1rem;">
-      <legend class="wtf-db__legend">Size</legend>
-      {% if builder_size_option and builder_size_option.values.size > 0 %}
-        <div class="wtf-db__chips chip-row" role="radiogroup" aria-label="Choose size">
-        {% liquid
-          assign option_key = 'option' | append: builder_size_position
-        %}
-        {%- for value in builder_size_option.values -%}
-          {% liquid
-            assign chip_id = 'size-' | append: section.id | append: '-' | append: forloop.index
-            assign matched_variant = blank
-
-            for v in builder_product.variants
-              if v[option_key] == value and v.available
-                assign matched_variant = v
-                break
-              endif
-            endfor
-            if matched_variant == blank
-              for v in builder_product.variants
-                if v[option_key] == value
-                  assign matched_variant = v
-                  break
+      <fieldset class="wtf-db__group">
+        <legend class="wtf-db__legend">Size</legend>
+        {% if builder_size_option and builder_size_option.values.size > 0 %}
+          <div class="wtf-db__chips chip-row" role="radiogroup" aria-label="Choose size">
+            {% liquid
+              assign option_key = 'option' | append: builder_size_position
+            %}
+            {%- for value in builder_size_option.values -%}
+              {% liquid
+                assign chip_id = 'size-' | append: section.id | append: '-' | append: forloop.index
+                assign matched_variant = builder_product.variants | where: option_key, value | first
+                assign is_checked = false
+                if builder_variant and matched_variant and matched_variant.id == builder_variant.id
+                  assign is_checked = true
+                elsif builder_variant == blank and forloop.first
+                  assign is_checked = true
                 endif
-              endfor
-            endif
-
-            assign variant_id = matched_variant.id
-            assign variant_price_cents = matched_variant.price | default: 0
-            assign variant_price_decimal = variant_price_cents | divided_by: 100.0
-            assign is_checked = false
-            if builder_variant and matched_variant and matched_variant.id == builder_variant.id
-              assign is_checked = true
-            elsif builder_variant == blank and forloop.first
-              assign is_checked = true
-            endif
-          %}
-          <label class="chip" for="{{ chip_id }}" style="display:inline-block;margin:.25rem .5rem .25rem 0;">
-            <input
-              type="radio"
-              id="{{ chip_id }}"
-              name="size"
-              value="{{ value | escape }}"
-              data-variant-id="{{ variant_id }}"
-              data-price="{{ variant_price_decimal }}"
-              data-price-cents="{{ variant_price_cents }}"
-              {% unless matched_variant and matched_variant.available %}data-available="false"{% endunless %}
-              {% if is_checked %}checked{% endif %}
-            />
-            <span>{{ value }}</span>
-          </label>
-        {%- endfor -%}
-        </div>
-      {% else %}
-        <p class="wtf-db__notice" role="alert">Add a <strong>Size</strong> option to this product to enable the builder.</p>
-      {% endif %}
-      <input type="hidden" name="properties[Size]" id="prop-size" value="">
-    </fieldset>
-
-    <!-- Strains (max 2; ½+½ supported) -->
-    <fieldset>
-      <legend>Strain (up to 2)</legend>
-      <div class="chip-row" aria-label="Choose up to two strains">
-        {% assign strains = 'Green,Red,White,Yellow' | split: ',' %}
-        {% for s in strains %}
-          <label class="chip">
-            <input type="checkbox" name="strain" value="{{ s }}">
-            {{ s }}
-          </label>
-        {% endfor %}
-      </div>
-      <input type="hidden" name="properties[Strain]" id="prop-strain" value="">
-    </fieldset>
-
-    <!-- THC concentration (only when product has thc variant metafield & Gallon is selected) -->
-    {% if builder_product.metafields.custom.thc_variant_id %}
-      <fieldset id="thc-fieldset" hidden>
-        <legend>THC concentration</legend>
-        <div class="chip-row" role="radiogroup" aria-label="THC concentration">
-          <label class="chip"><input type="radio" name="thc" value="Low">Low</label>
-          <label class="chip"><input type="radio" name="thc" value="Medium">Medium</label>
-          <label class="chip"><input type="radio" name="thc" value="High">High</label>
-        </div>
-        <input type="hidden" name="properties[THC Concentration]" id="prop-thc" value="">
+              %}
+              <label class="chip" for="{{ chip_id }}">
+                <input
+                  type="radio"
+                  id="{{ chip_id }}"
+                  name="size"
+                  value="{{ value | escape }}"
+                  data-variant-id="{{ matched_variant.id }}"
+                  data-price-cents="{{ matched_variant.price | default: 0 }}"
+                  {% unless matched_variant and matched_variant.available %}disabled{% endunless %}
+                  {% if is_checked %}checked{% endif %}
+                >
+                <span>{{ value }}</span>
+              </label>
+            {%- endfor -%}
+          </div>
+        {% else %}
+          <p class="wtf-db__notice" role="alert">Add a <strong>Size</strong> option to this product to enable the builder.</p>
+        {% endif %}
+        <input type="hidden" name="properties[Size]" id="prop-size" value="{{ builder_variant.option1 }}">
       </fieldset>
-    {% endif %}
 
-    <!-- Flavors (category + pumps) -->
-    <fieldset>
-      <legend>Flavors</legend>
-
-      {% comment %} If you have a snippet with your exact lists, render it. {% endcomment %}
-      {% render 'wtf-flavor-options' %}
-      {% comment %} If that snippet is missing, the JS will still allow manual entry via the search + chips UI you can add later. {% endcomment %}
-
-      <div
-        class="pump-meta small-text"
-        id="pump-meta"
-        data-included="{{ included_pumps }}"
-        data-extra="{{ extra_pump_price }}"
-        data-maxflavors="{{ max_flavors }}"
-      >
-        Included pumps: <strong>{{ included_pumps }}</strong>. Extra pump:
-        <strong>{{ extra_pump_price | money }}</strong>.
-      </div>
-      <input type="hidden" name="properties[Flavors]" id="prop-flavors" value="">
-      <input type="hidden" name="properties[Flavor Category]" id="prop-flavor-category" value="">
-      <input type="hidden" name="properties[Flavor Pump Detail]" id="prop-pumps" value="">
-    </fieldset>
-
-    <!-- Boosters / Sweeteners / Creamers -->
-    {% if section.settings.show_boosters %}
-      <fieldset>
-        <legend>Boosters</legend>
-        <div class="chip-row">
-          {% for b in section.blocks | where: 'type', 'booster' %}
-            <label class="chip"
-              ><input type="checkbox" name="booster" value="{{ b.settings.label | escape }}">{{ b.settings.label -}}
+      <fieldset id="strains-fieldset">
+        <legend>Strain (up to 2)</legend>
+        <div class="chip-row" aria-label="Choose up to two strains">
+          {% assign strains = 'Green,Red,White,Yellow' | split: ',' %}
+          {% for s in strains %}
+            <label class="chip">
+              <input type="checkbox" name="strain" value="{{ s }}">
+              <span>{{ s }}</span>
             </label>
           {% endfor %}
         </div>
-        <input type="hidden" name="properties[Boosters]" id="prop-boosters" value="">
+        <input type="hidden" name="properties[Strain]" id="prop-strain" value="">
       </fieldset>
-    {% endif %}
 
-    <fieldset>
-      <legend>Sweeteners</legend>
-      <div class="chip-row">
-        <label class="chip"><input type="checkbox" name="sweetener" value="Simple Syrup">Simple Syrup</label>
-        <label class="chip"><input type="checkbox" name="sweetener" value="Stevia">Stevia</label>
-        <label class="chip"
-          ><input type="checkbox" name="sweetener" value="Sugar-Free Vanilla">Sugar-Free Vanilla</label
-        >
+      <fieldset id="thc-fieldset" hidden>
+        <legend>THC Concentration</legend>
+        <div class="chip-row" role="radiogroup" aria-label="THC concentration">
+          {%- for thc_value in section.settings.thc_concentrations | split: ',' -%}
+            {%- assign thc_option = thc_value | strip -%}
+            <label class="chip">
+              <input type="radio" name="thc" value="{{ thc_option }}">
+              <span>{{ thc_option }}</span>
+            </label>
+          {%- endfor -%}
+        </div>
+        <input type="hidden" name="properties[THC Concentration]" id="prop-thc" value="">
+      </fieldset>
+
+
+      <fieldset id="flavors-fieldset">
+        <legend>Flavors</legend>
+        {% if section.settings.regular_flavors != blank %}
+          <h3 class="flavor-category-title">Regular</h3>
+          <div class="flavor-grid">
+            {% for flavor in section.settings.regular_flavors | split: '
+' %}
+              {%- assign f = flavor | strip -%}
+              {%- if f != blank -%}
+                <div class="flavor-chip" data-flavor-name="{{ f | escape }}" data-flavor-category="Regular">
+                  <span>{{ f }}</span>
+                  <div class="pump-controls">
+                    <button type="button" data-action="decrement" aria-label="Decrease {{ f }} pumps">−</button>
+                    <span class="pump-count" aria-live="polite">0</span>
+                    <button type="button" data-action="increment" aria-label="Increase {{ f }} pumps">+</button>
+                  </div>
+                </div>
+              {%- endif -%}
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if section.settings.sugar_free_flavors != blank %}
+          <h3 class="flavor-category-title" style="margin-top: 1.5rem;">Sugar-Free</h3>
+          <div class="flavor-grid">
+            {% for flavor in section.settings.sugar_free_flavors | split: '
+' %}
+              {%- assign f = flavor | strip -%}
+              {%- if f != blank -%}
+                <div class="flavor-chip" data-flavor-name="{{ f | escape }}" data-flavor-category="Sugar-Free">
+                  <span>{{ f }}</span>
+                  <div class="pump-controls">
+                    <button type="button" data-action="decrement" aria-label="Decrease {{ f }} pumps">−</button>
+                    <span class="pump-count" aria-live="polite">0</span>
+                    <button type="button" data-action="increment" aria-label="Increase {{ f }} pumps">+</button>
+                  </div>
+                </div>
+              {%- endif -%}
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="pump-meta" id="pump-meta"
+          data-included="{{ included_pumps }}"
+          data-extra-price-cents="{{ extra_pump_price | times: 100 | round }}"
+          data-max-flavors="{{ max_flavors }}">
+          Included pumps: <strong id="included-pumps-display">{{ included_pumps }}</strong>.
+          Extra pump: <strong>{{ extra_pump_price | money }}</strong>.
+          <span id="pump-count-summary">Total pumps: 0</span>
+        </div>
+        <input type="hidden" name="properties[Flavor Details]" id="prop-flavors" value="">
+      </fieldset>
+
+      {% liquid
+        assign boosters = section.settings.boosters | split: '
+'
+        assign sweeteners = section.settings.sweeteners | split: '
+'
+        assign creamers = section.settings.creamers | split: '
+'
+      %}
+      {% if boosters.size > 0 %}
+      <fieldset>
+        <legend>Boosters</legend>
+        <div class="chip-row">
+          {% for item in boosters %}
+            {% assign booster = item | strip %}
+            {% if booster != blank %}
+              <label class="chip"><input type="checkbox" name="booster" value="{{ booster }}"><span>{{ booster }}</span></label>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <input type="hidden" name="properties[Boosters]" id="prop-boosters">
+      </fieldset>
+      {% endif %}
+
+      {% if sweeteners.size > 0 %}
+      <fieldset>
+        <legend>Sweeteners</legend>
+        <div class="chip-row">
+          {% for item in sweeteners %}
+            {% assign sweetener = item | strip %}
+            {% if sweetener != blank %}
+              <label class="chip"><input type="checkbox" name="sweetener" value="{{ sweetener }}"><span>{{ sweetener }}</span></label>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <input type="hidden" name="properties[Sweeteners]" id="prop-sweeteners">
+      </fieldset>
+      {% endif %}
+
+      {% if creamers.size > 0 %}
+      <fieldset>
+        <legend>Creamers</legend>
+        <div class="chip-row">
+          {% for item in creamers %}
+            {% assign creamer = item | strip %}
+            {% if creamer != blank %}
+              <label class="chip"><input type="checkbox" name="creamer" value="{{ creamer }}"><span>{{ creamer }}</span></label>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <input type="hidden" name="properties[Creamers]" id="prop-creamers">
+      </fieldset>
+      {% endif %}
+
+
+      <p id="gallon-note" class="small-text" hidden>
+        {{ section.settings.staff_msg | default: 'For Gallons of Kratom or Kava, flavors are discussed with staff at pickup.' }}
+      </p>
+
+      <div data-product-form-error class="form-error" hidden>
+        <p class="error-message" role="alert"></p>
       </div>
-      <input type="hidden" name="properties[Sweeteners]" id="prop-sweeteners" value="">
-    </fieldset>
 
-    <fieldset>
-      <legend>Creamers</legend>
-      <div class="chip-row">
-        <label class="chip"><input type="checkbox" name="creamer" value="Half & Half">Half &amp; Half</label>
-        <label class="chip"><input type="checkbox" name="creamer" value="Oat Milk">Oat Milk</label>
-        <label class="chip"><input type="checkbox" name="creamer" value="Almond Milk">Almond Milk</label>
-      </div>
-      <input type="hidden" name="properties[Creamers]" id="prop-creamers" value="">
-    </fieldset>
+      <button type="submit" class="btn btn-primary" id="builder-add">Add to cart</button>
 
-    <!-- Gallon message -->
-    <p id="gallon-note" class="small-text" hidden>
-      For Gallons of Kratom or Kava, flavors are discussed with staff at pickup.
-    </p>
+      <p id="builder-help" class="visually-hidden">
+        Use the chips to choose options. You can select up to two strains and a limited number of flavor pumps per size.
+      </p>
+    </form>
 
-    <!-- Error Display -->
-    <div data-product-form-error class="form-error" hidden>
-      <p class="error-message" role="alert"></p>
-    </div>
-
-    <!-- Submit -->
-    <button type="submit" class="btn btn-primary" id="builder-add">Add to cart</button>
-
-    <!-- Helper -->
-    <p id="builder-help" class="visually-hidden">
-      Use the chips to choose options. You can select up to two strains and a limited number of flavor pumps per size.
-    </p>
-  </form>
-
-  <!-- Pass variant data to JS -->
-  <script type="application/json" id="builder-variants-{{ builder_product.id }}">
-    {{ builder_product.variants | json }}
-  </script>
-  {% comment %}
-    Note: The product form above includes data-product-form which our global.js
-    uses to intercept and perform an AJAX add-to-cart. This ensures the cart
-    drawer opens without a page reload when enabled.
-  {% endcomment %}
   {% else %}
     <div class="page-width" style="max-width:680px;margin:2rem auto 0;">
       <div class="wtf-db__empty" role="status">
@@ -264,50 +443,258 @@
   {% endif %}
 </section>
 
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const builder = document.getElementById('enhanced-drink-builder');
+  if (!builder) return;
+
+  const form = builder.querySelector('form[data-product-form]');
+  if (!form) return;
+
+  const state = {
+    basePriceCents: 0,
+    extraPumpCostCents: 0,
+    selectedFlavors: new Map(),
+    selectedStrains: new Set(),
+    selectedBoosters: new Set(),
+    selectedSweeteners: new Set(),
+    selectedCreamers: new Set(),
+    selectedThc: null,
+    isGallon: false
+  };
+
+  // DOM Elements
+  const priceEl = builder.querySelector('#builder-price');
+  const variantIdInput = builder.querySelector('#builder-variant-id');
+  const sizeRadios = builder.querySelectorAll('input[name="size"]');
+  const strainCheckboxes = builder.querySelectorAll('input[name="strain"]');
+  const pumpMeta = builder.querySelector('#pump-meta');
+  const includedPumps = parseInt(pumpMeta.dataset.included, 10);
+  const extraPumpPriceCents = parseInt(pumpMeta.dataset.extraPriceCents, 10);
+  const maxFlavors = parseInt(pumpMeta.dataset.maxFlavors, 10);
+  const pumpCountSummary = builder.querySelector('#pump-count-summary');
+  const gallonNote = builder.querySelector('#gallon-note');
+  const flavorsFieldset = builder.querySelector('#flavors-fieldset');
+  const thcFieldset = builder.querySelector('#thc-fieldset');
+  const thcRadios = builder.querySelectorAll('input[name="thc"]');
+  const strainsFieldset = builder.querySelector('#strains-fieldset');
+  const submitButton = builder.querySelector('#builder-add');
+
+  // Property Inputs
+  const propSize = builder.querySelector('#prop-size');
+  const propStrain = builder.querySelector('#prop-strain');
+  const propFlavors = builder.querySelector('#prop-flavors');
+  const propBoosters = builder.querySelector('#prop-boosters');
+  const propSweeteners = builder.querySelector('#prop-sweeteners');
+  const propCreamers = builder.querySelector('#prop-creamers');
+  const propThc = builder.querySelector('#prop-thc');
+
+
+  function formatMoney(cents) {
+    return `$${(cents / 100).toFixed(2)}`;
+  }
+
+  function updatePrice() {
+    state.extraPumpCostCents = 0;
+    const totalPumps = Array.from(state.selectedFlavors.values()).reduce((sum, count) => sum + count, 0);
+
+    if (totalPumps > includedPumps) {
+      state.extraPumpCostCents = (totalPumps - includedPumps) * extraPumpPriceCents;
+    }
+
+    const totalPriceCents = state.basePriceCents + state.extraPumpCostCents;
+    priceEl.textContent = formatMoney(totalPriceCents);
+    pumpCountSummary.textContent = `Total pumps: ${totalPumps}`;
+  }
+
+  function updateProperties() {
+    // Size
+    const selectedSizeRadio = builder.querySelector('input[name="size"]:checked');
+    propSize.value = selectedSizeRadio ? selectedSizeRadio.value : '';
+
+    // Strain
+    const strainsArray = Array.from(state.selectedStrains);
+    if (strainsArray.length === 2) {
+      propStrain.value = `½ ${strainsArray[0]} / ½ ${strainsArray[1]}`;
+    } else {
+      propStrain.value = strainsArray.join(', ');
+    }
+
+    // Flavors
+    const flavorDetails = [];
+    state.selectedFlavors.forEach((count, name) => {
+        if (count > 0) {
+            flavorDetails.push(`${name} (${count} pump${count > 1 ? 's' : ''})`);
+        }
+    });
+    propFlavors.value = flavorDetails.join(', ') || 'None';
+
+    // THC
+    propThc.value = state.selectedThc || 'None';
+
+    // Other modifiers
+    propBoosters.value = Array.from(state.selectedBoosters).join(', ') || 'None';
+    propSweeteners.value = Array.from(state.selectedSweeteners).join(', ') || 'None';
+    propCreamers.value = Array.from(state.selectedCreamers).join(', ') || 'None';
+  }
+
+  function handleSizeChange(event) {
+    const radio = event.target;
+    if (radio.checked) {
+      variantIdInput.value = radio.dataset.variantId;
+      state.basePriceCents = parseInt(radio.dataset.priceCents, 10);
+      state.isGallon = radio.value.toLowerCase().includes('gallon');
+
+      // Gallon specific logic
+      gallonNote.hidden = !state.isGallon;
+      flavorsFieldset.hidden = state.isGallon;
+      strainsFieldset.hidden = state.isGallon;
+      if (thcFieldset) {
+        thcFieldset.hidden = !state.isGallon;
+      }
+      
+      // Reset incompatible selections if switching to/from Gallon
+      if (state.isGallon) {
+        state.selectedFlavors.clear();
+        state.selectedStrains.clear();
+        document.querySelectorAll('.flavor-chip .pump-count').forEach(el => el.textContent = '0');
+        strainCheckboxes.forEach(cb => cb.checked = false);
+      } else {
+        state.selectedThc = null;
+        if(thcRadios) thcRadios.forEach(r => r.checked = false);
+      }
+
+      updatePrice();
+      updateProperties();
+    }
+  }
+
+  function handleStrainChange(event) {
+    const checkbox = event.target;
+    const strain = checkbox.value;
+
+    if (checkbox.checked) {
+      state.selectedStrains.add(strain);
+      if (state.selectedStrains.size > 2) {
+        const first = state.selectedStrains.values().next().value;
+        state.selectedStrains.delete(first);
+        builder.querySelector(`input[name="strain"][value="${first}"]`).checked = false;
+      }
+    } else {
+      state.selectedStrains.delete(strain);
+    }
+    updateProperties();
+  }
+
+  function handleFlavorChange(event) {
+    const button = event.target.closest('button[data-action]');
+    if (!button) return;
+
+    const flavorChip = button.closest('.flavor-chip');
+    const flavorName = flavorChip.dataset.flavorName;
+    const countEl = flavorChip.querySelector('.pump-count');
+    let currentCount = state.selectedFlavors.get(flavorName) || 0;
+    const totalFlavors = Array.from(state.selectedFlavors.values()).filter(v => v > 0).length;
+
+    if (button.dataset.action === 'increment') {
+      if (currentCount === 0 && totalFlavors >= maxFlavors) {
+        // Optional: Add a visual shake or alert
+        console.warn(`Cannot add more than ${maxFlavors} flavors.`);
+        return;
+      }
+      currentCount++;
+    } else if (button.dataset.action === 'decrement') {
+      currentCount = Math.max(0, currentCount - 1);
+    }
+
+    if(currentCount > 0) {
+      state.selectedFlavors.set(flavorName, currentCount);
+    } else {
+      state.selectedFlavors.delete(flavorName);
+    }
+    
+    countEl.textContent = currentCount;
+    updatePrice();
+    updateProperties();
+  }
+  
+  function createModifierHandler(propName, stateSet) {
+    return function(event) {
+      const checkbox = event.target;
+      if (checkbox.checked) {
+        stateSet.add(checkbox.value);
+      } else {
+        stateSet.delete(checkbox.value);
+      }
+      updateProperties();
+    }
+  }
+
+  // Initial State Setup
+  const initialSizeRadio = builder.querySelector('input[name="size"]:checked');
+  if (initialSizeRadio) {
+    handleSizeChange({ target: initialSizeRadio });
+  }
+
+  // Event Listeners
+  sizeRadios.forEach(radio => radio.addEventListener('change', handleSizeChange));
+  strainCheckboxes.forEach(checkbox => checkbox.addEventListener('change', handleStrainChange));
+  builder.querySelectorAll('.flavor-chip').forEach(chip => chip.addEventListener('click', handleFlavorChange));
+  
+  if (thcRadios) {
+    thcRadios.forEach(radio => radio.addEventListener('change', (e) => {
+      state.selectedThc = e.target.value;
+      updateProperties();
+    }));
+  }
+
+  builder.querySelectorAll('input[name="booster"]').forEach(cb => cb.addEventListener('change', createModifierHandler('Boosters', state.selectedBoosters)));
+  builder.querySelectorAll('input[name="sweetener"]').forEach(cb => cb.addEventListener('change', createModifierHandler('Sweeteners', state.selectedSweeteners)));
+  builder.querySelectorAll('input[name="creamer"]').forEach(cb => cb.addEventListener('change', createModifierHandler('Creamers', state.selectedCreamers)));
+
+  form.addEventListener('submit', (e) => {
+    // Final property update just before submission
+    updateProperties();
+    
+    // Check for gallon THC selection
+    if (state.isGallon && thcFieldset && !state.selectedThc) {
+      e.preventDefault();
+      const errorDiv = form.querySelector('[data-product-form-error]');
+      const errorMessage = errorDiv.querySelector('.error-message');
+      errorMessage.textContent = 'Please select a THC concentration for the Gallon size.';
+      errorDiv.hidden = false;
+      thcFieldset.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+  });
+});
+</script>
+
+
 {% schema %}
 {
   "name": "Enhanced Drink Builder",
   "templates": ["product", "page"],
   "settings": [
     { "type": "text", "id": "title", "label": "Heading", "default": "Build your drink" },
-    { "type": "checkbox", "id": "show_boosters", "label": "Show boosters", "default": true },
     { "type": "product", "id": "product", "label": "Product (for Pages)" },
-
-    { "type": "select", "id": "product_kind", "label": "Product kind (for Gallon logic)", "default": "auto",
-      "options": [
-        { "value": "auto", "label": "Auto-detect from product tags" },
-        { "value": "kratom", "label": "Kratom" },
-        { "value": "kava", "label": "Kava" },
-        { "value": "delta9", "label": "Delta-9" }
-      ]
-    },
-
     { "type": "header", "content": "Flavor lists" },
+    { "type": "textarea", "id": "regular_flavors", "label": "Regular flavors (one per line)",
+      "default": "Caramel Apple Butter\nLime\nGrenadine\nDark Chocolate\nMargarita\nBrown Sugar\nSalted Chocolate Caramel\nHibiscus Passion Fruit\nBlueberry\nCoconut Caramel (Samoa Cookie)\nCotton Candy"
+    },
     { "type": "textarea", "id": "sugar_free_flavors", "label": "Sugar-free flavors (one per line)",
       "default": "Blackberry\nWhite Chocolate\nPumpkin Spice\nLemon Spritz\nVanilla\nMaple Bourbon Pecan\nPeach\nSimple Syrup\nCosmopolitain\nRaspberry Lemonade\nPomegranate\nBlueberry Lavender\nSalted Caramel\nRose\nMexican Chocolate"
     },
-    { "type": "textarea", "id": "regular_flavors", "label": "Regular-sugar flavors (one per line)",
-      "default": "Caramel Apple Butter\nLime\nGrenadine\nDark Chocolate\nMargarita\nBrown Sugar\nSalted Chocolate Caramel\nHibiscus Passion Fruit\nBlueberry\nCoconut Caramel (Samoa Cookie)\nCotton Candy"
-    },
-
     { "type": "header", "content": "Modifiers" },
-    { "type": "text", "id": "ice_levels", "label": "Ice levels (comma separated)", "default": "No Ice, Light Ice, Regular Ice, Extra Ice" },
     { "type": "textarea", "id": "boosters", "label": "Boosters (one per line)", "default": "Kratom Shot\nKava Shot\nEnergy Shot" },
     { "type": "textarea", "id": "sweeteners", "label": "Sweeteners (one per line)", "default": "Stevia\nCane Sugar\nAgave" },
     { "type": "textarea", "id": "creamers", "label": "Creamers (one per line)", "default": "Half & Half\nAlmond Milk\nOat Milk\nCoconut Milk" },
 
     { "type": "header", "content": "Delta-9 (THC) concentration options" },
-    { "type": "text", "id": "thc_concentrations", "label": "THC concentrations (comma separated)", "default": "2 mg, 5 mg, 10 mg" },
+    { "type": "text", "id": "thc_concentrations", "label": "THC concentrations (comma separated)", "default": "5mg, 10mg, 20mg" },
 
     { "type": "header", "content": "Copy & UX" },
-    { "type": "text", "id": "staff_msg", "label": "Staff message for Kratom/Kava Gallon", "default": "Discuss flavor preferences with staff." }
-  ],
-  "blocks": [
-    {
-      "type": "booster",
-      "name": "Booster",
-      "settings": [{ "type": "text", "id": "label", "label": "Booster label", "default": "Kratom Booster" }]
-    }
+    { "type": "text", "id": "staff_msg", "label": "Staff message for Kratom/Kava Gallon", "default": "For Gallons, please discuss flavor preferences with our staff at pickup." }
   ],
   "presets": [{ "name": "Enhanced Drink Builder" }]
 }
