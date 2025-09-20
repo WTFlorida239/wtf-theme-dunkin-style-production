@@ -1,0 +1,233 @@
+{% liquid
+  assign accent = section.settings.accent | default: 'linear-gradient(135deg, #ff6600 0%, #ff8533 100%)'
+%}
+
+{%- style -%}
+  #shopify-section-{{ section.id }} .home-categories {
+    padding: clamp(3rem, 8vw, 6rem) 0;
+    background: #fff;
+  }
+
+  #shopify-section-{{ section.id }} .home-categories__inner {
+    display: grid;
+    gap: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  #shopify-section-{{ section.id }} .home-categories__header {
+    text-align: center;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  #shopify-section-{{ section.id }} .home-categories__title {
+    margin: 0;
+    font-size: clamp(2.4rem, 4.5vw, 4rem);
+    font-weight: 800;
+    color: #202124;
+  }
+
+  #shopify-section-{{ section.id }} .home-categories__subtitle {
+    color: rgba(32, 33, 36, 0.7);
+    margin: 1rem 0 0;
+    font-size: 1.7rem;
+  }
+
+  #shopify-section-{{ section.id }} .home-categories__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: clamp(1.8rem, 3vw, 2.6rem);
+  }
+
+  #shopify-section-{{ section.id }} .home-category-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    background: #fff;
+    border-radius: 24px;
+    padding: clamp(1.8rem, 4vw, 2.4rem);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+    isolation: isolate;
+  }
+
+  #shopify-section-{{ section.id }} .home-category-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 26px 48px rgba(0, 0, 0, 0.12);
+  }
+
+  #shopify-section-{{ section.id }} .home-category-card__media {
+    width: clamp(60px, 20vw, 88px);
+    height: clamp(60px, 20vw, 88px);
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    display: grid;
+    place-items: center;
+    background: {{ accent }};
+  }
+
+  #shopify-section-{{ section.id }} .home-category-card__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  #shopify-section-{{ section.id }} .home-category-card__title {
+    font-size: 2.1rem;
+    font-weight: 800;
+    margin: 0;
+    color: #212121;
+  }
+
+  #shopify-section-{{ section.id }} .home-category-card__desc {
+    margin: 0;
+    color: rgba(32, 33, 36, 0.7);
+    font-size: 1.5rem;
+    line-height: 1.5;
+  }
+
+  #shopify-section-{{ section.id }} .home-category-card__meta {
+    font-size: 1.3rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(32, 33, 36, 0.55);
+    margin-top: auto;
+  }
+{%- endstyle -%}
+
+<section class="home-categories">
+  <div class="home-categories__inner page-width">
+    <div class="home-categories__header">
+      {% if section.settings.title != blank %}
+        <h2 class="home-categories__title">{{ section.settings.title }}</h2>
+      {% endif %}
+      {% if section.settings.subtitle != blank %}
+        <p class="home-categories__subtitle">{{ section.settings.subtitle }}</p>
+      {% endif %}
+    </div>
+
+    <div class="home-categories__grid">
+      {% for block in section.blocks %}
+        {% if block.type == 'category' %}
+          {% liquid
+            assign destination = block.settings.link | default: '#'
+            assign card_alt = block.settings.title | default: shop.name
+          %}
+          <a
+            class="home-category-card"
+            href="{{ destination }}"
+            {{ block.shopify_attributes }}
+          >
+            <span class="home-category-card__media">
+              {% if block.settings.image != blank %}
+                {{ block.settings.image | image_url: width: 180 | image_tag: alt: card_alt, loading: 'lazy', decoding: 'async' }}
+              {% else %}
+                <span aria-hidden="true">{{ block.settings.fallback_emoji | default: '✨' }}</span>
+              {% endif %}
+            </span>
+            {% if block.settings.title != blank %}
+              <h3 class="home-category-card__title">{{ block.settings.title }}</h3>
+            {% endif %}
+            {% if block.settings.description != blank %}
+              <p class="home-category-card__desc">{{ block.settings.description }}</p>
+            {% endif %}
+            {% if block.settings.meta != blank %}
+              <span class="home-category-card__meta">{{ block.settings.meta }}</span>
+            {% endif %}
+          </a>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Home category grid",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Heading",
+      "default": "Order your favorites"
+    },
+    {
+      "type": "textarea",
+      "id": "subtitle",
+      "label": "Subheading",
+      "default": "Premium quality botanical products, edibles, beverages and more."
+    },
+    {
+      "type": "color_background",
+      "id": "accent",
+      "label": "Accent gradient",
+      "default": "linear-gradient(135deg, #ff6600 0%, #ff8533 100%)"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "category",
+      "name": "Category card",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title",
+          "default": "Kratom teas"
+        },
+        {
+          "type": "textarea",
+          "id": "description",
+          "label": "Description",
+          "default": "Premium strains with 25+ flavor options."
+        },
+        {
+          "type": "text",
+          "id": "meta",
+          "label": "Meta line",
+          "default": "4 strains • 25 flavors"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Card image"
+        },
+        {
+          "type": "text",
+          "id": "fallback_emoji",
+          "label": "Fallback emoji",
+          "default": "🍹"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 12,
+  "presets": [
+    {
+      "name": "Home category grid",
+      "blocks": [
+        {
+          "type": "category"
+        },
+        {
+          "type": "category"
+        },
+        {
+          "type": "category"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

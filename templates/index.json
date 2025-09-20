@@ -1,0 +1,85 @@
+{
+  "sections": {
+    "hero": {
+      "type": "home-hero",
+      "settings": {
+        "heading": "Welcome to WTF",
+        "subheading": "Cape Coral's premier kava bar",
+        "description": "Premium edibles, beverages, cannabis and botanicals crafted for Southwest Florida.",
+        "button_link": "tel:2399550314",
+        "button_label": "Call (239) 955-0314",
+        "hero_badge": "Premium botanicals"
+      }
+    },
+    "categories": {
+      "type": "home-category-grid",
+      "blocks": {
+        "category-1": {
+          "type": "category",
+          "settings": {
+            "title": "Kratom teas",
+            "description": "Green, red, white & yellow strains with premium flavorings.",
+            "meta": "4 strains • 25 flavors",
+            "link": "shopify://pages/kratom-teas",
+            "fallback_emoji": "🍵"
+          }
+        },
+        "category-2": {
+          "type": "category",
+          "settings": {
+            "title": "Kava drinks",
+            "description": "Traditional relaxation brews in rotating flavors.",
+            "meta": "M • L • Gallons",
+            "link": "shopify://pages/kava-drinks",
+            "fallback_emoji": "🥥"
+          }
+        },
+        "category-3": {
+          "type": "category",
+          "settings": {
+            "title": "THC beverages",
+            "description": "House-made cannabis drinks and specialty shots.",
+            "meta": "Delta-9 • Shots",
+            "link": "shopify://pages/thc-drinks",
+            "fallback_emoji": "✨"
+          }
+        },
+        "category-4": {
+          "type": "category",
+          "settings": {
+            "title": "Draft pours",
+            "description": "16oz pours from our rotating taps.",
+            "meta": "8 on tap",
+            "link": "shopify://pages/draft-pours",
+            "fallback_emoji": "🍺"
+          }
+        }
+      },
+      "block_order": [
+        "category-1",
+        "category-2",
+        "category-3",
+        "category-4"
+      ],
+      "settings": {
+        "title": "Order your favorites",
+        "subtitle": "Premium quality botanical products, edibles, beverages and more."
+      }
+    },
+    "visit": {
+      "type": "home-visit",
+      "settings": {
+        "title": "Visit our Cape Coral lounge",
+        "subtitle": "Relax in the heart of downtown with premium kava, kratom, and botanical experiences.",
+        "address": "📍 1520 SE 46th Ln, Unit B, Cape Coral, FL 33904",
+        "phone": "☎️ (239) 955-0314",
+        "hours": "Open daily • Late night pours"
+      }
+    }
+  },
+  "order": [
+    "hero",
+    "categories",
+    "visit"
+  ]
+}
