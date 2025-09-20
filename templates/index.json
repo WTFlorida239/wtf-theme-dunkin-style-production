@@ -9,7 +9,27 @@
         "button_link": "tel:2399550314",
         "button_label": "Call (239) 955-0314",
         "hero_badge": "Premium botanicals"
-      }
+      },
+      "blocks": {
+        "hero-social-1": {
+          "type": "social_link",
+          "settings": {
+            "label": "📘",
+            "url": "https://www.facebook.com/"
+          }
+        },
+        "hero-social-2": {
+          "type": "social_link",
+          "settings": {
+            "label": "📷",
+            "url": "https://www.instagram.com/"
+          }
+        }
+      },
+      "block_order": [
+        "hero-social-1",
+        "hero-social-2"
+      ]
     },
     "categories": {
       "type": "home-category-grid",
@@ -75,11 +95,22 @@
         "phone": "☎️ (239) 955-0314",
         "hours": "Open daily • Late night pours"
       }
+    },
+    "footer_blurb": {
+      "type": "home-footer-blurb",
+      "settings": {
+        "eyebrow": "Stay late, vibe longer",
+        "heading": "Handcrafted botanicals poured fresh nightly",
+        "body": "<p>We craft small-batch kava, kratom, THC beverages, and alcohol-free elixirs that keep Cape Coral relaxed. Grab your go-to drink for pickup, or slide into the lounge for nightly specials and community events.</p>",
+        "button_label": "Plan your visit",
+        "button_link": "shopify://pages/locations"
+      }
     }
   },
   "order": [
     "hero",
     "categories",
-    "visit"
+    "visit",
+    "footer_blurb"
   ]
 }
