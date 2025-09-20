@@ -1,0 +1,1 @@
+<paste AGENTS.md content>
