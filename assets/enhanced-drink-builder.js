@@ -84,6 +84,28 @@
       sel(`#builder-variants-${root.dataset.productId || ""}`)?.textContent ||
         "[]"
     );
+    const sizePosition = Number(root.dataset.sizePosition || 1);
+    const optionKey = `option${Number.isNaN(sizePosition) ? 1 : sizePosition}`;
+    const normalize = (val) => String(val || "").trim().toLowerCase();
+
+    const fromRadio = (radio) => {
+      if (!radio) return null;
+      const id = Number(radio.dataset.variantId || "");
+      const centsAttr = radio.dataset.priceCents;
+      let price = null;
+      if (centsAttr !== undefined) {
+        const parsed = Number(centsAttr);
+        if (!Number.isNaN(parsed)) price = parsed;
+      } else if (radio.dataset.price !== undefined) {
+        const parsed = Number(radio.dataset.price);
+        if (!Number.isNaN(parsed)) price = Math.round(parsed * 100);
+      }
+      return {
+        id: id || null,
+        price,
+        title: radio.value,
+      };
+    };
 
     // Pump meta from the page
     const pumpMeta = sel("#pump-meta", root);
@@ -92,10 +114,30 @@
 
     // Helpers
     const getSelectedSize = () => sizeRadios.find((r) => r.checked);
-    const findVariantByTitle = (title) =>
-      varData.find(
-        (v) => String(v.title).toLowerCase() === String(title).toLowerCase()
-      );
+    const findVariantForSize = (label) => {
+      const normalized = normalize(label);
+      if (!normalized) return null;
+      const radio = sizeRadios.find((r) => normalize(r.value) === normalized);
+      let variant = fromRadio(radio);
+      const fallback =
+        varData.find((v) => normalize(v[optionKey]) === normalized) ||
+        varData.find((v) => normalize(v.title) === normalized) ||
+        null;
+
+      if (!variant && fallback) return fallback;
+      if (variant && fallback) {
+        if (!variant.id && fallback.id) variant.id = fallback.id;
+        if (
+          (variant.price === null || Number.isNaN(variant.price)) &&
+          typeof fallback.price === "number"
+        ) {
+          variant.price = fallback.price;
+        }
+        if (!variant.title && fallback.title) variant.title = fallback.title;
+      }
+
+      return variant || null;
+    };
     const money = (n) => {
       try {
         return new Intl.NumberFormat(undefined, {
@@ -112,24 +154,34 @@
       if (!s) return;
       prop.size.value = s.value;
 
-      const v = findVariantByTitle(s.value);
+      const v = findVariantForSize(s.value);
       if (v) {
-        variantId.value = v.id;
-        priceEl.textContent = money(v.price / 100);
-        const isGallon = /gallon/i.test(s.value);
-        gallonNote.hidden = !isGallon;
-        if (thcFieldset) thcFieldset.hidden = !isGallon;
+        if (v.id) variantId.value = v.id;
+        if (typeof v.price === "number") {
+          priceEl.textContent = money(v.price / 100);
+        }
       }
 
-      const sizes = ["Medium", "Large", "Gallon"];
-      const idx = sizes.findIndex(
-        (x) => x.toLowerCase() === s.value.toLowerCase()
-      );
-      const next = sizes[idx + 1] ? findVariantByTitle(sizes[idx + 1]) : null;
-      if (next && v) {
-        const diff = (next.price - v.price) / 100;
+      const isGallon = /gallon/i.test(s.value);
+      gallonNote.hidden = !isGallon;
+      if (thcFieldset) thcFieldset.hidden = !isGallon;
+
+      const currentIndex = sizeRadios.indexOf(s);
+      const nextRadio = currentIndex > -1 ? sizeRadios[currentIndex + 1] : null;
+      const nextVariant = nextRadio ? findVariantForSize(nextRadio.value) : null;
+      if (
+        v &&
+        typeof v.price === "number" &&
+        nextVariant &&
+        typeof nextVariant.price === "number"
+      ) {
+        const diff = (nextVariant.price - v.price) / 100;
         upsellEl.textContent =
-          diff > 0 ? `Upgrade to ${next.title} for ${money(diff)} more` : "";
+          diff > 0
+            ? `Upgrade to ${nextVariant.title || nextRadio.value} for ${money(
+                diff
+              )} more`
+            : "";
       } else {
         upsellEl.textContent = "";
       }
@@ -164,17 +216,17 @@
       }
 
       const s = getSelectedSize();
+      if (!s) return;
       const sizeIncluded = /medium/i.test(s.value)
         ? 4
         : /large/i.test(s.value)
         ? 6
         : 12;
       const extra = Math.max(0, totalPumps - sizeIncluded);
-      const v = findVariantByTitle(s.value);
-
-      if (v) {
-        const base = v.price / 100;
-        const total = base + extra * EXTRA_PRICE;
+      const v = findVariantForSize(s?.value);
+      const base = v && typeof v.price === "number" ? v.price / 100 : 0;
+      const total = base + extra * EXTRA_PRICE;
+      if (base > 0 || extra > 0) {
         priceEl.textContent = money(total);
       }
 
@@ -246,8 +298,8 @@
 
       // Ensure the correct variant ID is set before submitting
       const s = getSelectedSize();
-      const v = findVariantByTitle(s?.value);
-      if (v) variantId.value = v.id;
+      const v = findVariantForSize(s?.value);
+      if (v?.id) variantId.value = v.id;
 
       // Handle the AJAX request
       if (errorRegion) {

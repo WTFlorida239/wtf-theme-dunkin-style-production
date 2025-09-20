@@ -8,54 +8,131 @@
   - Saves all choices as line item properties
 {% endcomment %}
 
+{% liquid
+  assign builder_product = product
+  if builder_product == blank and section.settings.product != blank
+    assign builder_product = section.settings.product
+  endif
+  if builder_product == blank and page and page.metafields.wtf.product_handle != blank
+    assign builder_product = all_products[page.metafields.wtf.product_handle]
+  endif
+
+  assign builder_has_product = builder_product != blank
+  if builder_has_product
+    assign builder_variant = builder_product.selected_or_first_available_variant
+    assign builder_included_pumps = builder_product.metafields.custom.included_pumps | default: 4
+    assign builder_extra_pump_price = builder_product.metafields.custom.extra_pump_price | default: 0.50
+    assign builder_max_flavors = builder_product.metafields.custom.max_flavors | default: 3
+
+    assign builder_size_option = blank
+    for opt in builder_product.options_with_values
+      if builder_size_option == blank
+        assign builder_size_option = opt
+      endif
+      if opt.name == 'Size'
+        assign builder_size_option = opt
+        break
+      endif
+    endfor
+
+    assign builder_size_position = builder_size_option.position | default: 1
+  endif
+%}
+
 <section
   id="enhanced-drink-builder"
   class="wtf-builder"
   aria-labelledby="builder-title"
-  data-product-id="{{ product.id }}"
+  {% if builder_has_product %}
+    data-product-id="{{ builder_product.id }}"
+    data-size-position="{{ builder_size_position }}"
+  {% endif %}
 >
   <h2 id="builder-title">{{ section.settings.title | default: 'Build your drink' }}</h2>
 
-  {%- assign included_pumps = product.metafields.custom.included_pumps | default: 4 -%}
-  {%- assign extra_pump_price = product.metafields.custom.extra_pump_price | default: 0.50 -%}
-  {%- assign max_flavors = product.metafields.custom.max_flavors | default: 3 -%}
+  {% if builder_has_product %}
+    {%- assign included_pumps = builder_included_pumps -%}
+    {%- assign extra_pump_price = builder_extra_pump_price -%}
+    {%- assign max_flavors = builder_max_flavors -%}
 
   <form
-    id="builder-form-{{ product.id }}"
+    id="builder-form-{{ builder_product.id }}"
     method="post"
     action="/cart/add"
     data-product-form
     role="form"
     aria-describedby="builder-help"
   >
-    <input type="hidden" name="id" id="builder-variant-id">
+    <input
+      type="hidden"
+      name="id"
+      id="builder-variant-id"
+      value="{{ builder_variant.id }}"
+    >
 
     <!-- Live price -->
     <div class="price-row" aria-live="polite">
-      <span class="current-price" id="builder-price">{{ product.price | money }}</span>
+      <span class="current-price" id="builder-price">{{ builder_variant.price | default: builder_product.price | money }}</span>
       <span class="upsell-hint" id="builder-upsell"></span>
     </div>
 
     <!-- Size (variants) -->
     <fieldset class="wtf-db__group" style="margin-bottom:1rem;">
       <legend class="wtf-db__legend">Size</legend>
-      <div class="wtf-db__chips chip-row" role="radiogroup" aria-label="Choose size">
-        {%- for v in product.variants -%}
-          {%- assign chip_id = 'size-' | append: section.id | append: '-' | append: forloop.index -%}
+      {% if builder_size_option and builder_size_option.values.size > 0 %}
+        <div class="wtf-db__chips chip-row" role="radiogroup" aria-label="Choose size">
+        {% liquid
+          assign option_key = 'option' | append: builder_size_position
+        %}
+        {%- for value in builder_size_option.values -%}
+          {% liquid
+            assign chip_id = 'size-' | append: section.id | append: '-' | append: forloop.index
+            assign matched_variant = blank
+
+            for v in builder_product.variants
+              if v[option_key] == value and v.available
+                assign matched_variant = v
+                break
+              endif
+            endfor
+            if matched_variant == blank
+              for v in builder_product.variants
+                if v[option_key] == value
+                  assign matched_variant = v
+                  break
+                endif
+              endfor
+            endif
+
+            assign variant_id = matched_variant.id
+            assign variant_price_cents = matched_variant.price | default: 0
+            assign variant_price_decimal = variant_price_cents | divided_by: 100.0
+            assign is_checked = false
+            if builder_variant and matched_variant and matched_variant.id == builder_variant.id
+              assign is_checked = true
+            elsif builder_variant == blank and forloop.first
+              assign is_checked = true
+            endif
+          %}
           <label class="chip" for="{{ chip_id }}" style="display:inline-block;margin:.25rem .5rem .25rem 0;">
             <input
               type="radio"
               id="{{ chip_id }}"
               name="size"
-              value="{{ v.title | escape }}"
-              data-variant-id="{{ v.id }}"
-              data-price="{{ v.price | divided_by: 100.0 }}"
-              {% if forloop.first %}checked{% endif %}
+              value="{{ value | escape }}"
+              data-variant-id="{{ variant_id }}"
+              data-price="{{ variant_price_decimal }}"
+              data-price-cents="{{ variant_price_cents }}"
+              {% unless matched_variant and matched_variant.available %}data-available="false"{% endunless %}
+              {% if is_checked %}checked{% endif %}
             />
-            <span>{{ v.title }}</span>
+            <span>{{ value }}</span>
           </label>
         {%- endfor -%}
-      </div>
+        </div>
+      {% else %}
+        <p class="wtf-db__notice" role="alert">Add a <strong>Size</strong> option to this product to enable the builder.</p>
+      {% endif %}
       <input type="hidden" name="properties[Size]" id="prop-size" value="">
     </fieldset>
 
@@ -75,7 +152,7 @@
     </fieldset>
 
     <!-- THC concentration (only when product has thc variant metafield & Gallon is selected) -->
-    {% if product.metafields.custom.thc_variant_id %}
+    {% if builder_product.metafields.custom.thc_variant_id %}
       <fieldset id="thc-fieldset" hidden>
         <legend>THC concentration</legend>
         <div class="chip-row" role="radiogroup" aria-label="THC concentration">
@@ -167,14 +244,24 @@
   </form>
 
   <!-- Pass variant data to JS -->
-  <script type="application/json" id="builder-variants-{{ product.id }}">
-    {{ product.variants | json }}
+  <script type="application/json" id="builder-variants-{{ builder_product.id }}">
+    {{ builder_product.variants | json }}
   </script>
   {% comment %}
     Note: The product form above includes data-product-form which our global.js
     uses to intercept and perform an AJAX add-to-cart. This ensures the cart
     drawer opens without a page reload when enabled.
   {% endcomment %}
+  {% else %}
+    <div class="page-width" style="max-width:680px;margin:2rem auto 0;">
+      <div class="wtf-db__empty" role="status">
+        <p style="margin:0;font-weight:600;">Assign a product to this builder section.</p>
+        <p style="margin:0.5rem 0 0;color:rgba(0,0,0,.6);">
+          Select a product in the section settings or set the <code>wtf.product_handle</code> metafield on this page.
+        </p>
+      </div>
+    </div>
+  {% endif %}
 </section>
 
 {% schema %}
