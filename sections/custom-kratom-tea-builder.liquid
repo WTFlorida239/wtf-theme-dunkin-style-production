@@ -1,0 +1,1078 @@
+{% comment %}
+  Custom builder experience for the Kratom Tea product.
+  Replaces the legacy liquid template implementation with a modular OS 2.0 section.
+  All UI, styling, and AJAX cart logic are encapsulated here to keep the template lean.
+{% endcomment %}
+
+{% liquid
+  assign primary_variant = product.selected_or_first_available_variant
+  assign variant_id = primary_variant.id
+  assign builder_media = section.settings.featured_media | default: product.featured_media
+  assign builder_media_alt = builder_media.alt | default: product.title
+  assign size_lines = section.settings.size_options | newline_to_br | split: '<br />'
+  assign strain_lines = section.settings.strain_options | newline_to_br | split: '<br />'
+  assign flavor_lines = section.settings.flavor_options | newline_to_br | split: '<br />'
+  assign back_link_url = section.settings.back_link | default: collection.url | default: routes.collections_url | default: routes.root_url
+  assign back_link_label = section.settings.back_link_label | default: 'Back to menu'
+  assign default_size_label = section.settings.default_size | strip
+  assign first_size_label = ''
+  assign first_price_value = ''
+  assign initial_size_label = ''
+  assign default_price_value = ''
+  for size_line in size_lines
+    assign trimmed = size_line | strip
+    if trimmed == ''
+      continue
+    endif
+    assign parts = trimmed | split: '|'
+    assign label = parts[0] | strip
+    assign price_value = parts[2] | strip
+    if first_size_label == ''
+      assign first_size_label = label
+    endif
+    if first_price_value == '' and price_value != ''
+      assign first_price_value = price_value
+    endif
+    if default_size_label != '' and label == default_size_label
+      assign initial_size_label = label
+      assign default_price_value = price_value
+      break
+    endif
+  endfor
+  if default_price_value == ''
+    assign default_price_value = first_price_value
+  endif
+  if initial_size_label == ''
+    if default_size_label != ''
+      assign initial_size_label = default_size_label
+    else
+      assign initial_size_label = first_size_label
+    endif
+  endif
+  assign default_price_cents = 0
+  if default_price_value != ''
+    assign normalized_price = default_price_value | replace: ',', '.' | plus: 0
+    assign default_price_cents = normalized_price | times: 100 | round
+  endif
+  if default_price_cents <= 0
+    assign default_price_cents = primary_variant.price | default: 0
+  endif
+  assign default_price_formatted = default_price_cents | money_with_currency: shop.currency
+  assign default_strain_value = section.settings.default_strain | strip
+  assign first_strain_label = ''
+  assign initial_strain_label = ''
+  assign initial_strain_value = ''
+  for strain_line in strain_lines
+    assign trimmed = strain_line | strip
+    if trimmed == ''
+      continue
+    endif
+    assign parts = trimmed | split: '|'
+    assign strain_label = parts[0] | strip
+    assign strain_value = parts[1] | strip | default: strain_label
+    if first_strain_label == ''
+      assign first_strain_label = strain_label
+    endif
+    if initial_strain_value == ''
+      assign initial_strain_value = strain_value
+    endif
+    if default_strain_value != '' and (strain_value == default_strain_value or strain_label == default_strain_value)
+      assign initial_strain_label = strain_label
+      assign initial_strain_value = strain_value
+      break
+    endif
+  endfor
+  if initial_strain_label == ''
+    assign initial_strain_label = first_strain_label
+  endif
+  if initial_strain_value == ''
+    assign initial_strain_value = default_strain_value | default: first_strain_label
+  endif
+%}
+
+<section class="kratom-builder" id="kratom-builder-{{ section.id }}">
+  <div class="kratom-builder__inner page-width">
+    <div class="kratom-builder__breadcrumbs">
+      <a class="kratom-builder__back-link" href="{{ back_link_url }}">← {{ back_link_label | escape }}</a>
+    </div>
+
+    <div class="kratom-builder__layout">
+      <div class="kratom-builder__media">
+        {%- if builder_media -%}
+          {{ builder_media | image_url: width: 960 | image_tag:
+            loading: 'lazy',
+            sizes: '(min-width: 1200px) 460px, (min-width: 768px) 60vw, 90vw',
+            widths: '360, 540, 720, 900',
+            alt: builder_media_alt
+          }}
+        {%- else -%}
+          <div class="kratom-builder__media-placeholder" aria-hidden="true"></div>
+        {%- endif -%}
+      </div>
+
+      <div class="kratom-builder__panel">
+        <header class="kratom-builder__header">
+          <h1 class="kratom-builder__title">{{ section.settings.heading | default: product.title | escape }}</h1>
+          <div class="kratom-builder__price" aria-live="polite" data-price-display>
+            {{ section.settings.price_prefix | escape }}
+            <span data-price-amount>{{ default_price_formatted }}</span>
+          </div>
+          {%- if section.settings.description != blank -%}
+            <p class="kratom-builder__description">{{ section.settings.description }}</p>
+          {%- endif -%}
+        </header>
+
+        <div class="kratom-builder__section" data-builder-section>
+          <h2 class="kratom-builder__section-title">{{ section.settings.size_heading | default: 'Choose your size' | escape }}</h2>
+          <div class="kratom-builder__options">
+            {%- for size_line in size_lines -%}
+              {%- assign trimmed = size_line | strip -%}
+              {%- if trimmed == '' -%}
+                {%- continue -%}
+              {%- endif -%}
+              {%- assign parts = trimmed | split: '|' -%}
+              {%- assign size_label = parts[0] | strip -%}
+              {%- assign size_meta = parts[1] | strip -%}
+              {%- assign size_price = parts[2] | strip | default: primary_variant.price | divided_by: 100.0 -%}
+              {%- assign size_pumps = parts[3] | strip | default: 'custom' -%}
+              {%- assign option_id = section.id | append: '-size-' | append: forloop.index0 -%}
+              <label class="kratom-builder__option">
+                <input
+                  type="radio"
+                  name="kratom-size"
+                  id="{{ option_id }}"
+                  value="{{ size_label | escape }}"
+                  data-size-label="{{ size_label | escape }}"
+                  data-price="{{ size_price }}"
+                  data-pumps="{{ size_pumps | escape }}"
+                  {% if size_label == initial_size_label %}
+                    checked
+                  {% endif %}
+                >
+                <span class="kratom-builder__option-content">
+                  <span class="kratom-builder__option-label">{{ size_label | escape }}</span>
+                  {%- if size_meta != blank -%}
+                    <span class="kratom-builder__option-meta">{{ size_meta }}</span>
+                  {%- endif -%}
+                </span>
+              </label>
+            {%- endfor -%}
+          </div>
+        </div>
+
+        <div class="kratom-builder__section" data-builder-section>
+          <h2 class="kratom-builder__section-title">{{ section.settings.strain_heading | default: 'Choose your strain' | escape }}</h2>
+          <div class="kratom-builder__options">
+            {%- for strain_line in strain_lines -%}
+              {%- assign trimmed = strain_line | strip -%}
+              {%- if trimmed == '' -%}
+                {%- continue -%}
+              {%- endif -%}
+              {%- assign parts = trimmed | split: '|' -%}
+              {%- assign strain_label = parts[0] | strip -%}
+              {%- assign strain_value = parts[1] | strip | default: strain_label -%}
+              {%- assign is_mix_option = strain_value == 'mix' -%}
+              {%- assign option_id = section.id | append: '-strain-' | append: forloop.index0 -%}
+              <label class="kratom-builder__option">
+                <input
+                  type="radio"
+                  name="kratom-strain"
+                  id="{{ option_id }}"
+                  value="{{ strain_value | escape }}"
+                  data-strain-label="{{ strain_label | escape }}"
+                  {% if strain_value == initial_strain_value %}
+                    checked
+                  {% endif %}
+                >
+                <span class="kratom-builder__option-content">
+                  <span class="kratom-builder__option-label">{{ strain_label | escape }}</span>
+                  {%- if is_mix_option -%}
+                    <span class="kratom-builder__option-meta">½ + ½</span>
+                  {%- endif -%}
+                </span>
+              </label>
+            {%- endfor -%}
+          </div>
+          <div class="kratom-builder__mix" data-mix-wrapper hidden>
+            <h3 class="kratom-builder__mix-title">{{ section.settings.mix_heading | default: 'Choose your combination' | escape }}</h3>
+            <div class="kratom-builder__mix-grid">
+              <label class="kratom-builder__mix-select">
+                <span class="visually-hidden">{{ 'First strain' | t }}</span>
+                <select data-mix-select>
+                  {%- for strain_line in strain_lines -%}
+                    {%- assign trimmed = strain_line | strip -%}
+                    {%- if trimmed == '' -%}
+                      {%- continue -%}
+                    {%- endif -%}
+                    {%- assign parts = trimmed | split: '|' -%}
+                    {%- assign strain_label = parts[0] | strip -%}
+                    {%- assign strain_value = parts[1] | strip | default: strain_label -%}
+                    {%- unless strain_value == 'mix' -%}
+                      <option value="{{ strain_label | escape }}">{{ strain_label | escape }}</option>
+                    {%- endunless -%}
+                  {%- endfor -%}
+                </select>
+              </label>
+              <label class="kratom-builder__mix-select">
+                <span class="visually-hidden">{{ 'Second strain' | t }}</span>
+                <select data-mix-select>
+                  {%- for strain_line in strain_lines -%}
+                    {%- assign trimmed = strain_line | strip -%}
+                    {%- if trimmed == '' -%}
+                      {%- continue -%}
+                    {%- endif -%}
+                    {%- assign parts = trimmed | split: '|' -%}
+                    {%- assign strain_label = parts[0] | strip -%}
+                    {%- assign strain_value = parts[1] | strip | default: strain_label -%}
+                    {%- unless strain_value == 'mix' -%}
+                      <option value="{{ strain_label | escape }}" {% if forloop.index0 == 1 %}selected{% endif %}>{{ strain_label | escape }}</option>
+                    {%- endunless -%}
+                  {%- endfor -%}
+                </select>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="kratom-builder__section" data-builder-section>
+          <h2 class="kratom-builder__section-title">{{ section.settings.flavor_heading | default: 'Choose flavors & pumps' | escape }}</h2>
+          <div class="kratom-builder__info-card">
+            {{ section.settings.pump_info | default: '<strong>Pump system:</strong> Medium = 4 pumps, Large = 6 pumps, Gallon = Custom. <br><strong>How it works:</strong> Pumps divide evenly across flavors unless specified.' }}
+          </div>
+          <div class="kratom-builder__flavors">
+            {%- for flavor_line in flavor_lines -%}
+              {%- assign flavor = flavor_line | strip -%}
+              {%- if flavor == '' -%}
+                {%- continue -%}
+              {%- endif -%}
+              {%- assign flavor_id = section.id | append: '-flavor-' | append: forloop.index0 -%}
+              <label class="kratom-builder__flavor">
+                <input type="checkbox" name="kratom-flavor" value="{{ flavor | escape }}" id="{{ flavor_id }}">
+                <span class="kratom-builder__flavor-label">{{ flavor | escape }}</span>
+              </label>
+            {%- endfor -%}
+          </div>
+          <div class="kratom-builder__pump-display" data-pump-display hidden>
+            <h3 class="kratom-builder__pump-title">{{ section.settings.pump_heading | default: 'Pump distribution' | escape }}</h3>
+            <div data-pump-breakdown></div>
+          </div>
+        </div>
+
+        <div class="kratom-builder__section" data-builder-section>
+          <h2 class="kratom-builder__section-title">{{ section.settings.extra_heading | default: 'Additional pumps (+$0.50 each)' | escape }}</h2>
+          <div class="kratom-builder__extra">
+            <div class="kratom-builder__quantity" role="group" aria-label="{{ section.settings.extra_heading | escape }}">
+              <button type="button" class="kratom-builder__quantity-button" data-extra-button="decrease" aria-label="Decrease pumps">−</button>
+              <input type="number" min="0" value="0" inputmode="numeric" pattern="[0-9]*" class="kratom-builder__quantity-input" data-extra-pumps>
+              <button type="button" class="kratom-builder__quantity-button" data-extra-button="increase" aria-label="Increase pumps">+</button>
+            </div>
+            <span class="kratom-builder__extra-price" data-extra-price>+{{ 0 | money_with_currency: shop.currency }}</span>
+          </div>
+        </div>
+
+        <div class="kratom-builder__section" data-builder-section>
+          <h2 class="kratom-builder__section-title">{{ section.settings.comment_heading | default: 'Special requests' | escape }}</h2>
+          <textarea class="kratom-builder__textarea" rows="4" placeholder="{{ section.settings.comment_placeholder | escape }}" data-comments></textarea>
+        </div>
+
+        <form
+          class="kratom-builder__form"
+          action="{{ routes.cart_add_url }}"
+          method="post"
+          data-ajax-cart-form
+        >
+          <input type="hidden" name="id" value="{{ variant_id }}"{% unless variant_id %} disabled{% endunless %}>
+          <input type="hidden" name="properties[Size]" value="{{ initial_size_label | escape }}" data-line-prop="size">
+          <input type="hidden" name="properties[Strain]" value="{{ initial_strain_label | escape }}" data-line-prop="strain">
+          <input type="hidden" name="properties[Flavors]" value="" data-line-prop="flavors">
+          <input type="hidden" name="properties[Pump Distribution]" value="" data-line-prop="pump-distribution">
+          <input type="hidden" name="properties[Extra Pumps]" value="0" data-line-prop="extra-pumps">
+          <input type="hidden" name="properties[Comments]" value="" data-line-prop="comments">
+
+          <div class="kratom-builder__form-footer">
+            <div class="kratom-builder__form-price" aria-live="polite">
+              <span>{{ section.settings.button_prefix | escape }}</span>
+              <span data-cart-price>{{ section.settings.price_prefix | escape }}<span data-cart-price-amount>{{ default_price_formatted }}</span></span>
+            </div>
+            <button
+              type="submit"
+              class="kratom-builder__submit"
+              data-submit
+              data-loading-label="{{ section.settings.button_loading | escape }}"
+              data-success-label="{{ section.settings.button_success | escape }}"
+              {% unless variant_id %}disabled aria-disabled="true"{% endunless %}
+            >
+              {{ section.settings.button_label | escape }}
+            </button>
+          </div>
+          <p class="kratom-builder__availability" role="status">
+            {%- if variant_id -%}
+              {{ section.settings.availability_message | default: 'Add to cart to start your custom brew.' }}
+            {%- else -%}
+              {{ section.settings.unavailable_message | default: 'This product is currently unavailable.' }}
+            {%- endif -%}
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  #kratom-builder-{{ section.id }} {
+    padding: clamp(2rem, 3vw, 3.75rem) 0;
+    background: radial-gradient(circle at top right, rgba(255, 102, 0, 0.08), transparent 55%), var(--color-page-background, #f6f7fb);
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__inner {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__breadcrumbs {
+    font-weight: 600;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__back-link {
+    text-decoration: none;
+    color: {{ settings.color_primary | default: '#ff6600' }};
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: clamp(2rem, 5vw, 3.5rem);
+    align-items: start;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__media img {
+    width: 100%;
+    height: auto;
+    border-radius: 1.75rem;
+    box-shadow: 0 35px 60px rgba(20, 22, 34, 0.18);
+    object-fit: cover;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__media-placeholder {
+    aspect-ratio: 4 / 5;
+    border-radius: 1.75rem;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.12));
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__panel {
+    background: #fff;
+    border-radius: 1.75rem;
+    padding: clamp(1.75rem, 3vw, 2.75rem);
+    box-shadow: 0 30px 65px rgba(18, 23, 38, 0.12);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1.5rem, 2.25vw, 2.5rem);
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__title {
+    margin: 0 0 0.5rem;
+    font-size: clamp(2rem, 2.5vw, 2.65rem);
+    letter-spacing: -0.01em;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__price {
+    display: inline-flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: {{ settings.color_primary | default: '#ff6600' }};
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__description {
+    margin: 0;
+    color: rgba(20, 22, 34, 0.72);
+    font-size: 1rem;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__section-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__option {
+    position: relative;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__option input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__option-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.35rem;
+    padding: 1.1rem 1rem;
+    border-radius: 1rem;
+    border: 2px solid rgba(20, 22, 34, 0.1);
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 14px 30px rgba(20, 22, 34, 0.08);
+    transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__option input:checked + .kratom-builder__option-content {
+    border-color: {{ settings.color_primary | default: '#ff6600' }};
+    transform: translateY(-3px);
+    box-shadow: 0 20px 40px rgba(255, 102, 0, 0.2);
+    color: {{ settings.color_primary | default: '#ff6600' }};
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__option-label {
+    font-weight: 700;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__option-meta {
+    font-size: 0.85rem;
+    color: rgba(20, 22, 34, 0.6);
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__mix {
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 1rem;
+    background: rgba(255, 102, 0, 0.06);
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__mix-title {
+    margin: 0;
+    font-size: 1rem;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__mix-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__mix-select select {
+    width: 100%;
+    padding: 0.75rem 0.9rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(20, 22, 34, 0.18);
+    font-size: 1rem;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__info-card {
+    padding: 1rem 1.25rem;
+    border-radius: 1rem;
+    background: rgba(40, 132, 255, 0.08);
+    font-size: 0.95rem;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__flavors {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.65rem;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 0.5rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(20, 22, 34, 0.08);
+    background: #fff;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__flavor {
+    position: relative;
+    display: inline-flex;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__flavor input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__flavor-label {
+    width: 100%;
+    padding: 0.7rem 0.85rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(20, 22, 34, 0.12);
+    text-align: center;
+    font-weight: 600;
+    transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__flavor input:checked + .kratom-builder__flavor-label {
+    background: rgba(34, 197, 94, 0.14);
+    border-color: rgba(34, 197, 94, 1);
+    color: rgba(20, 93, 52, 1);
+    transform: translateY(-2px);
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__pump-display {
+    padding: 1rem 1.25rem;
+    border-radius: 1rem;
+    background: rgba(255, 196, 37, 0.18);
+    border: 1px solid rgba(255, 196, 37, 0.35);
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__pump-title {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__extra {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__quantity {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid rgba(20, 22, 34, 0.12);
+    overflow: hidden;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__quantity-button {
+    appearance: none;
+    border: 0;
+    background: rgba(20, 22, 34, 0.05);
+    padding: 0.75rem 1rem;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: background 160ms ease;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__quantity-button:hover,
+  #kratom-builder-{{ section.id }} .kratom-builder__quantity-button:focus {
+    background: {{ settings.color_primary | default: '#ff6600' }};
+    color: #fff;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__quantity-input {
+    width: 72px;
+    border: 0;
+    text-align: center;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__extra-price {
+    font-weight: 700;
+    color: {{ settings.color_primary | default: '#ff6600' }};
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__textarea {
+    width: 100%;
+    border-radius: 1rem;
+    border: 1px solid rgba(20, 22, 34, 0.16);
+    padding: 1rem 1.1rem;
+    font-size: 1rem;
+    resize: vertical;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__form-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__form-price {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__submit {
+    appearance: none;
+    border: 0;
+    border-radius: 999px;
+    padding: 0.95rem 2.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    background: {{ settings.color_primary | default: '#ff6600' }};
+    color: #fff;
+    cursor: pointer;
+    transition: transform 160ms ease, box-shadow 160ms ease;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__submit:hover,
+  #kratom-builder-{{ section.id }} .kratom-builder__submit:focus {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 35px rgba(255, 102, 0, 0.25);
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__submit[disabled] {
+    cursor: not-allowed;
+    opacity: 0.6;
+    box-shadow: none;
+    transform: none;
+  }
+  #kratom-builder-{{ section.id }} .kratom-builder__availability {
+    margin: 0;
+    font-size: 0.95rem;
+    color: rgba(20, 22, 34, 0.6);
+  }
+  @media (max-width: 1024px) {
+    #kratom-builder-{{ section.id }} .kratom-builder__layout {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 640px) {
+    #kratom-builder-{{ section.id }} {
+      padding-inline: 1.25rem;
+    }
+    #kratom-builder-{{ section.id }} .kratom-builder__panel {
+      padding: 1.5rem;
+    }
+    #kratom-builder-{{ section.id }} .kratom-builder__options {
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    const sectionId = 'kratom-builder-{{ section.id }}';
+    const moneyFormatter = new Intl.NumberFormat('{{ shop.locale | default: 'en-US' }}', {
+      style: 'currency',
+      currency: '{{ shop.currency | default: 'USD' }}'
+    });
+
+    const initialize = (root) => {
+      if (!root || root.dataset.initialized === 'true') {
+        return;
+      }
+      root.dataset.initialized = 'true';
+
+      const form = root.querySelector('form');
+      if (!form) {
+        return;
+      }
+
+      const sizeRadios = Array.from(root.querySelectorAll('input[name="kratom-size"]'));
+      const strainRadios = Array.from(root.querySelectorAll('input[name="kratom-strain"]'));
+      const mixWrapper = root.querySelector('[data-mix-wrapper]');
+      const mixSelects = Array.from(root.querySelectorAll('[data-mix-select]'));
+      const flavorCheckboxes = Array.from(root.querySelectorAll('input[name="kratom-flavor"]'));
+      const pumpDisplay = root.querySelector('[data-pump-display]');
+      const pumpBreakdown = root.querySelector('[data-pump-breakdown]');
+      const extraInput = root.querySelector('[data-extra-pumps]');
+      const extraButtons = Array.from(root.querySelectorAll('[data-extra-button]'));
+      const extraPrice = root.querySelector('[data-extra-price]');
+      const commentsInput = root.querySelector('[data-comments]');
+      const submitButton = root.querySelector('[data-submit]');
+      const priceDisplay = root.querySelector('[data-price-amount]');
+      const cartPriceDisplay = root.querySelector('[data-cart-price-amount]');
+      const hiddenInputs = {};
+      form.querySelectorAll('[data-line-prop]').forEach((input) => {
+        hiddenInputs[input.dataset.lineProp] = input;
+      });
+
+      const getSelectedSize = () => sizeRadios.find((input) => input.checked);
+      const getSelectedStrain = () => strainRadios.find((input) => input.checked);
+      const getSelectedFlavors = () => flavorCheckboxes.filter((input) => input.checked).map((input) => input.value);
+
+      const formatMoney = (value) => {
+        const number = Number.parseFloat(value || 0);
+        if (Number.isNaN(number)) {
+          return moneyFormatter.format(0);
+        }
+        return moneyFormatter.format(number);
+      };
+
+      const syncSize = () => {
+        const selectedSize = getSelectedSize();
+        if (!selectedSize) {
+          return;
+        }
+        const basePrice = Number.parseFloat(selectedSize.dataset.price || '0');
+        const extra = Number.parseInt(extraInput.value || '0', 10) * 0.5;
+        const total = basePrice + (Number.isNaN(extra) ? 0 : extra);
+        const formatted = formatMoney(total);
+        if (priceDisplay) {
+          priceDisplay.textContent = formatted;
+        }
+        if (cartPriceDisplay) {
+          cartPriceDisplay.textContent = formatted;
+        }
+        if (hiddenInputs.size) {
+          hiddenInputs.size.value = selectedSize.dataset.sizeLabel || selectedSize.value;
+        }
+        updatePumpSummary();
+      };
+
+      const syncStrain = () => {
+        const selected = getSelectedStrain();
+        if (!selected) {
+          return;
+        }
+        if (selected.value === 'mix') {
+          if (mixWrapper) {
+            mixWrapper.hidden = false;
+          }
+          const values = mixSelects.map((select) => select.value.trim()).filter(Boolean);
+          if (hiddenInputs.strain) {
+            hiddenInputs.strain.value = values.join(' + ');
+          }
+        } else {
+          if (mixWrapper) {
+            mixWrapper.hidden = true;
+          }
+          if (hiddenInputs.strain) {
+            hiddenInputs.strain.value = selected.dataset.strainLabel || selected.value;
+          }
+        }
+      };
+
+      const updatePumpSummary = () => {
+        const size = getSelectedSize();
+        const flavors = getSelectedFlavors();
+        if (!hiddenInputs['flavors']) {
+          return;
+        }
+        hiddenInputs['flavors'].value = flavors.join(', ');
+
+        if (!pumpDisplay || !pumpBreakdown || !size) {
+          return;
+        }
+
+        const pumpValue = size.dataset.pumps || '';
+        if (!flavors.length) {
+          pumpDisplay.hidden = true;
+          pumpBreakdown.innerHTML = '';
+          if (hiddenInputs['pump-distribution']) {
+            hiddenInputs['pump-distribution'].value = '';
+          }
+          return;
+        }
+
+        if (pumpValue === 'custom' || pumpValue === '') {
+          pumpDisplay.hidden = false;
+          pumpBreakdown.innerHTML = '<strong>Custom:</strong> Discuss pump distribution with the bar team.';
+          if (hiddenInputs['pump-distribution']) {
+            hiddenInputs['pump-distribution'].value = 'Custom distribution required';
+          }
+          return;
+        }
+
+        const totalPumps = Number.parseInt(pumpValue, 10);
+        if (Number.isNaN(totalPumps) || totalPumps <= 0) {
+          pumpDisplay.hidden = true;
+          pumpBreakdown.innerHTML = '';
+          if (hiddenInputs['pump-distribution']) {
+            hiddenInputs['pump-distribution'].value = '';
+          }
+          return;
+        }
+
+        pumpDisplay.hidden = false;
+        const pumpsPerFlavor = Math.floor(totalPumps / flavors.length);
+        let remainder = totalPumps % flavors.length;
+        const rows = flavors.map((flavor) => {
+          const pumps = pumpsPerFlavor + (remainder > 0 ? 1 : 0);
+          remainder = Math.max(0, remainder - 1);
+          return { flavor, pumps };
+        });
+        pumpBreakdown.innerHTML = rows
+          .map((row) => `<strong>${row.flavor}</strong>: ${row.pumps} pump${row.pumps === 1 ? '' : 's'}`)
+          .join('<br>');
+        if (hiddenInputs['pump-distribution']) {
+          hiddenInputs['pump-distribution'].value = rows
+            .map((row) => `${row.flavor}: ${row.pumps} pump${row.pumps === 1 ? '' : 's'}`)
+            .join(', ');
+        }
+      };
+
+      const syncExtraPumps = () => {
+        const value = Math.max(0, Number.parseInt(extraInput.value || '0', 10) || 0);
+        extraInput.value = value;
+        if (hiddenInputs['extra-pumps']) {
+          hiddenInputs['extra-pumps'].value = value;
+        }
+        if (extraPrice) {
+          const formatted = formatMoney(value * 0.5);
+          extraPrice.textContent = `+${formatted}`;
+        }
+        syncSize();
+      };
+
+      const syncComments = () => {
+        if (hiddenInputs.comments) {
+          hiddenInputs.comments.value = commentsInput.value.trim();
+        }
+      };
+
+      sizeRadios.forEach((radio) => {
+        radio.addEventListener('change', syncSize);
+      });
+      strainRadios.forEach((radio) => {
+        radio.addEventListener('change', syncStrain);
+      });
+      mixSelects.forEach((select) => {
+        select.addEventListener('change', syncStrain);
+      });
+      flavorCheckboxes.forEach((checkbox) => {
+        checkbox.addEventListener('change', () => {
+          updatePumpSummary();
+        });
+      });
+      extraButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const direction = button.dataset.extraButton;
+          const delta = direction === 'decrease' ? -1 : 1;
+          extraInput.value = Math.max(0, Number.parseInt(extraInput.value || '0', 10) + delta);
+          syncExtraPumps();
+        });
+      });
+      extraInput.addEventListener('input', syncExtraPumps);
+      if (commentsInput) {
+        commentsInput.addEventListener('input', syncComments);
+      }
+
+      const updateCartCount = (count) => {
+        const targets = document.querySelectorAll('[data-cart-count], [data-cart-count-target]');
+        targets.forEach((target) => {
+          target.textContent = count;
+        });
+      };
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (!submitButton || submitButton.hasAttribute('disabled')) {
+          return;
+        }
+        const flavors = getSelectedFlavors();
+        if (flavors.length === 0) {
+          window.alert('{{ section.settings.flavor_alert | escape }}');
+          return;
+        }
+
+        const formData = new FormData(form);
+        const originalLabel = submitButton.innerHTML;
+        submitButton.innerText = submitButton.dataset.loadingLabel || 'Adding…';
+        submitButton.setAttribute('disabled', 'disabled');
+
+        fetch(form.action + '.js', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Accept': 'application/json' },
+          body: formData
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw response;
+            }
+            return response.json();
+          })
+          .then(() => fetch('{{ routes.cart_url }}.js', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } }))
+          .then((response) => response.json())
+          .then((cart) => {
+            updateCartCount(cart.item_count);
+            submitButton.innerText = submitButton.dataset.successLabel || 'Added!';
+            window.dispatchEvent(new CustomEvent('wtf:cart:updated', { detail: cart }));
+          })
+          .catch(async (error) => {
+            let message = '{{ section.settings.error_message | escape }}';
+            if (error && error.json) {
+              try {
+                const data = await error.json();
+                if (data && data.message) {
+                  message = data.message;
+                }
+              } catch (err) {
+                /* noop */
+              }
+            }
+            window.alert(message);
+            submitButton.innerHTML = originalLabel;
+          })
+          .finally(() => {
+            setTimeout(() => {
+              submitButton.innerHTML = originalLabel;
+              submitButton.removeAttribute('disabled');
+            }, 1500);
+          });
+      });
+
+      // Initial sync
+      syncSize();
+      syncStrain();
+      syncExtraPumps();
+      syncComments();
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const root = document.getElementById(sectionId);
+      initialize(root);
+    });
+
+    document.addEventListener('shopify:section:load', (event) => {
+      if (event.target && event.target.querySelector(`#${sectionId}`)) {
+        initialize(event.target.querySelector(`#${sectionId}`));
+      }
+    });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Custom kratom tea builder",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Title",
+      "default": "Custom Kratom Tea"
+    },
+    {
+      "type": "text",
+      "id": "price_prefix",
+      "label": "Price prefix",
+      "default": "Starting at"
+    },
+    {
+      "type": "text",
+      "id": "button_prefix",
+      "label": "Price label prefix",
+      "default": "Your total:"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Description",
+      "default": "<p>Create your perfect kratom tea with premium strains, flavors, and add-ons.</p>"
+    },
+    {
+      "type": "image_picker",
+      "id": "featured_media",
+      "label": "Featured image override"
+    },
+    {
+      "type": "url",
+      "id": "back_link",
+      "label": "Back link override"
+    },
+    {
+      "type": "text",
+      "id": "back_link_label",
+      "label": "Back link label",
+      "default": "Back to Kratom teas"
+    },
+    {
+      "type": "textarea",
+      "id": "size_options",
+      "label": "Size options",
+      "default": "Medium|12 oz · $8.00|8.00|4\nLarge|16 oz · $12.00|12.00|6\nGallon|128 oz · $45.00|45.00|custom"
+    },
+    {
+      "type": "text",
+      "id": "default_size",
+      "label": "Default size",
+      "default": "Medium"
+    },
+    {
+      "type": "textarea",
+      "id": "strain_options",
+      "label": "Strain options",
+      "default": "Green Strain|Green\nRed Strain|Red\nWhite Strain|White\nYellow Strain|Yellow\nMix Strains|mix"
+    },
+    {
+      "type": "text",
+      "id": "default_strain",
+      "label": "Default strain",
+      "default": "Green"
+    },
+    {
+      "type": "textarea",
+      "id": "flavor_options",
+      "label": "Flavor options",
+      "default": "Lemon\nLime\nOrange\nBlood orange\nStrawberry\nRaspberry\nBlueberry\nCoconut\nMango\nWatermelon\nSimple syrup\nSour apple\nDragon fruit\nBlackberry\nS'mores\nPumpkin spice\nCranberry\nGrenadine\nLavender\nChocolate\nCaramel\nMaple\nAgave\nHazelnut\nRose\nPassion fruit\nHibiscus"
+    },
+    {
+      "type": "text",
+      "id": "size_heading",
+      "label": "Size heading",
+      "default": "Choose your size"
+    },
+    {
+      "type": "text",
+      "id": "strain_heading",
+      "label": "Strain heading",
+      "default": "Choose your strain"
+    },
+    {
+      "type": "text",
+      "id": "mix_heading",
+      "label": "Mix heading",
+      "default": "Choose your combination"
+    },
+    {
+      "type": "text",
+      "id": "flavor_heading",
+      "label": "Flavor heading",
+      "default": "Choose flavors & pumps"
+    },
+    {
+      "type": "richtext",
+      "id": "pump_info",
+      "label": "Pump info",
+      "default": "<p><strong>Pump system:</strong> Medium = 4 pumps, Large = 6 pumps, Gallon = Custom.<br><strong>How it works:</strong> Pumps divide evenly unless otherwise noted.</p>"
+    },
+    {
+      "type": "text",
+      "id": "pump_heading",
+      "label": "Pump heading",
+      "default": "Pump distribution"
+    },
+    {
+      "type": "text",
+      "id": "extra_heading",
+      "label": "Extra pumps heading",
+      "default": "Additional pumps (+$0.50 each)"
+    },
+    {
+      "type": "text",
+      "id": "comment_heading",
+      "label": "Comment heading",
+      "default": "Special requests"
+    },
+    {
+      "type": "text",
+      "id": "comment_placeholder",
+      "label": "Comment placeholder",
+      "default": "Any special requests or modifications? We'll do our best!"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label",
+      "default": "Add to cart"
+    },
+    {
+      "type": "text",
+      "id": "button_loading",
+      "label": "Button loading label",
+      "default": "Adding…"
+    },
+    {
+      "type": "text",
+      "id": "button_success",
+      "label": "Button success label",
+      "default": "Added!"
+    },
+    {
+      "type": "textarea",
+      "id": "availability_message",
+      "label": "Availability message",
+      "default": "Add to cart to start your custom brew."
+    },
+    {
+      "type": "textarea",
+      "id": "unavailable_message",
+      "label": "Unavailable message",
+      "default": "This product is currently unavailable."
+    },
+    {
+      "type": "text",
+      "id": "flavor_alert",
+      "label": "Flavor selection alert",
+      "default": "Please choose at least one flavor before adding to cart."
+    },
+    {
+      "type": "textarea",
+      "id": "error_message",
+      "label": "Fallback error message",
+      "default": "Something went wrong while adding to the cart. Please try again."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom kratom tea builder"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,200 @@
+{% comment %}
+  Product recommendations section leveraging Shopify's predictive recommendations endpoint.
+  Provides configurable heading and supports optional vendor display.
+{% endcomment %}
+
+<section class="product-recommendations" id="section-{{ section.id }}">
+  <div class="product-recommendations__inner page-width">
+    {%- if section.settings.heading != blank -%}
+      <div class="product-recommendations__header">
+        <h2 class="product-recommendations__title">{{ section.settings.heading | escape }}</h2>
+      </div>
+    {%- endif -%}
+
+    <product-recommendations
+      class="product-recommendations__list"
+      data-section-id="{{ section.id }}"
+      data-limit="{{ section.settings.products_to_show }}"
+      data-product-id="{{ product.id }}"
+    >
+      {%- if recommendations.performed -%}
+        {%- if recommendations.products_count > 0 -%}
+          <ul class="product-recommendations__grid" role="list">
+            {%- for recommendation in recommendations.products -%}
+              <li class="product-recommendations__item" data-product-id="{{ recommendation.id }}">
+                <a href="{{ recommendation.url }}" class="product-recommendations__link">
+                  <div class="product-recommendations__media">
+                    {%- if recommendation.featured_media -%}
+                      {{ recommendation.featured_media | image_url: width: 600 | image_tag:
+                        loading: 'lazy',
+                        sizes: '(min-width: 1200px) 300px, (min-width: 768px) 33vw, 50vw',
+                        widths: '180, 360, 540, 720'
+                      }}
+                    {%- else -%}
+                      <div class="product-recommendations__placeholder" aria-hidden="true"></div>
+                    {%- endif -%}
+                  </div>
+                  <div class="product-recommendations__meta">
+                    <h3 class="product-recommendations__product-title">{{ recommendation.title | escape }}</h3>
+                    {%- if section.settings.show_vendor and recommendation.vendor != blank -%}
+                      <p class="product-recommendations__vendor">{{ recommendation.vendor | escape }}</p>
+                    {%- endif -%}
+                    <div class="product-recommendations__price">
+                      {%- render 'price', product: recommendation, use_variant: true -%}
+                    </div>
+                  </div>
+                </a>
+              </li>
+            {%- endfor -%}
+          </ul>
+        {%- else -%}
+          <p class="product-recommendations__empty">{{ 'products.product.recommendations.empty' | t }}</p>
+        {%- endif -%}
+      {%- else -%}
+        <div class="product-recommendations__skeleton" aria-hidden="true">
+          {%- for i in (1..section.settings.products_to_show) -%}
+            <div class="product-recommendations__skeleton-card"></div>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+    </product-recommendations>
+  </div>
+</section>
+
+<style>
+  #section-{{ section.id }} {
+    padding: clamp(2.5rem, 3vw, 4rem) 0;
+    background: var(--color-surface, transparent);
+  }
+  #section-{{ section.id }} .product-recommendations__header {
+    margin-bottom: clamp(1.5rem, 2vw, 2.25rem);
+    text-align: center;
+  }
+  #section-{{ section.id }} .product-recommendations__title {
+    font-size: clamp(1.75rem, 1.6vw, 2.25rem);
+    margin: 0;
+  }
+  #section-{{ section.id }} .product-recommendations__grid {
+    display: grid;
+    gap: clamp(1.5rem, 2.5vw, 2.5rem);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  #section-{{ section.id }} .product-recommendations__item {
+    border-radius: 1rem;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 18px 45px rgba(27, 32, 50, 0.08);
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+  #section-{{ section.id }} .product-recommendations__link {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    color: inherit;
+    text-decoration: none;
+  }
+  #section-{{ section.id }} .product-recommendations__item:hover,
+  #section-{{ section.id }} .product-recommendations__item:focus-within {
+    transform: translateY(-4px);
+    box-shadow: 0 24px 55px rgba(27, 32, 50, 0.12);
+  }
+  #section-{{ section.id }} .product-recommendations__media {
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+  }
+  #section-{{ section.id }} .product-recommendations__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  #section-{{ section.id }} .product-recommendations__placeholder {
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+      45deg,
+      rgba(0, 0, 0, 0.05),
+      rgba(0, 0, 0, 0.05) 10px,
+      rgba(0, 0, 0, 0.08) 10px,
+      rgba(0, 0, 0, 0.08) 20px
+    );
+  }
+  #section-{{ section.id }} .product-recommendations__meta {
+    padding: 1.25rem 1.5rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  #section-{{ section.id }} .product-recommendations__product-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  #section-{{ section.id }} .product-recommendations__vendor {
+    margin: 0;
+    font-size: 0.875rem;
+    color: rgba(0, 0, 0, 0.6);
+  }
+  #section-{{ section.id }} .product-recommendations__price {
+    margin-top: auto;
+    font-weight: 700;
+  }
+  #section-{{ section.id }} .product-recommendations__empty {
+    text-align: center;
+    margin: 0;
+  }
+  #section-{{ section.id }} .product-recommendations__skeleton {
+    display: grid;
+    gap: clamp(1.5rem, 2.5vw, 2.5rem);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+  #section-{{ section.id }} .product-recommendations__skeleton-card {
+    aspect-ratio: 4 / 5;
+    border-radius: 1rem;
+    background: linear-gradient(110deg, rgba(0, 0, 0, 0.08) 8%, rgba(0, 0, 0, 0.02) 18%, rgba(0, 0, 0, 0.08) 33%);
+    background-size: 200% 100%;
+    animation: shimmer 1.3s linear infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Product recommendations",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "You may also love"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "label": "Products to show",
+      "default": 4
+    },
+    {
+      "type": "checkbox",
+      "id": "show_vendor",
+      "label": "Show vendor",
+      "default": false
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product recommendations"
+    }
+  ]
+}
+{% endschema %}

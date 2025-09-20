@@ -1,0 +1,117 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-product",
+      "settings": {
+        "color_scheme": "background-1",
+        "media_size": "large",
+        "media_position": "left",
+        "gallery_layout": "stacked",
+        "enable_sticky_info": true,
+        "image_zoom": "lightbox",
+        "mobile_thumbnails": "hide",
+        "hide_variants": false,
+        "enable_video_looping": false,
+        "padding_top": 36,
+        "padding_bottom": 12
+      },
+      "blocks": {
+        "title": {
+          "type": "title"
+        },
+        "price": {
+          "type": "price"
+        },
+        "variant_picker": {
+          "type": "variant_picker",
+          "settings": {
+            "picker_type": "button"
+          }
+        },
+        "quantity": {
+          "type": "quantity_selector"
+        },
+        "buy_buttons": {
+          "type": "buy_buttons",
+          "settings": {
+            "show_dynamic_checkout": true,
+            "show_gift_card_recipient": true
+          }
+        },
+        "description": {
+          "type": "description"
+        },
+        "share": {
+          "type": "share",
+          "settings": {
+            "share_label": "Share"
+          }
+        }
+      },
+      "block_order": [
+        "title",
+        "price",
+        "variant_picker",
+        "quantity",
+        "buy_buttons",
+        "description",
+        "share"
+      ]
+    },
+    "builder": {
+      "type": "custom-kratom-tea-builder",
+      "settings": {
+        "heading": "Custom Kratom Tea",
+        "price_prefix": "Starting at",
+        "button_prefix": "Your total:",
+        "description": "<p>Create your perfect kratom tea with premium strains, flavors, and add-ons.</p>",
+        "back_link_label": "Back to Kratom teas",
+        "size_options": "Medium|12 oz · $8.00|8.00|4\nLarge|16 oz · $12.00|12.00|6\nGallon|128 oz · $45.00|45.00|custom",
+        "default_size": "Medium",
+        "strain_options": "Green Strain|Green\nRed Strain|Red\nWhite Strain|White\nYellow Strain|Yellow\nMix Strains|mix",
+        "default_strain": "Green",
+        "flavor_options": "Lemon\nLime\nOrange\nBlood orange\nStrawberry\nRaspberry\nBlueberry\nCoconut\nMango\nWatermelon\nSimple syrup\nSour apple\nDragon fruit\nBlackberry\nS'mores\nPumpkin spice\nCranberry\nGrenadine\nLavender\nChocolate\nCaramel\nMaple\nAgave\nHazelnut\nRose\nPassion fruit\nHibiscus",
+        "size_heading": "Choose your size",
+        "strain_heading": "Choose your strain",
+        "mix_heading": "Choose your combination",
+        "flavor_heading": "Choose flavors & pumps",
+        "pump_info": "<p><strong>Pump system:</strong> Medium = 4 pumps, Large = 6 pumps, Gallon = Custom.<br><strong>How it works:</strong> Pumps divide evenly unless otherwise noted.</p>",
+        "pump_heading": "Pump distribution",
+        "extra_heading": "Additional pumps (+$0.50 each)",
+        "comment_heading": "Special requests",
+        "comment_placeholder": "Any special requests or modifications? We'll do our best!",
+        "button_label": "Add to cart",
+        "button_loading": "Adding…",
+        "button_success": "Added!",
+        "availability_message": "Add to cart to start your custom brew.",
+        "unavailable_message": "This product is currently unavailable.",
+        "flavor_alert": "Please choose at least one flavor before adding to cart.",
+        "error_message": "Something went wrong while adding to the cart. Please try again."
+      }
+    },
+    "upsell": {
+      "type": "product-upsell-grid",
+      "settings": {
+        "heading": "Perfect pairings",
+        "subheading": "Mix and match these house favorites with your custom pour.",
+        "button_label": "View product"
+      },
+      "blocks": {},
+      "block_order": []
+    },
+    "recommendations": {
+      "type": "product-recommendations",
+      "settings": {
+        "heading": "You may also love",
+        "products_to_show": 4,
+        "show_vendor": false
+      }
+    }
+  },
+  "order": [
+    "main",
+    "builder",
+    "upsell",
+    "recommendations"
+  ]
+}
