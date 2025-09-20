@@ -1,0 +1,235 @@
+{% comment %}
+  Merchandised upsell grid for highlighting complementary products on the product page.
+  Supports up to six manual product selections with customizable heading and subheading copy.
+{% endcomment %}
+
+<section class="product-upsell" id="section-{{ section.id }}">
+  <div class="product-upsell__inner page-width">
+    <div class="product-upsell__header">
+      {%- if section.settings.heading != blank -%}
+        <h2 class="product-upsell__title">{{ section.settings.heading | escape }}</h2>
+      {%- endif -%}
+      {%- if section.settings.subheading != blank -%}
+        <p class="product-upsell__subtitle">{{ section.settings.subheading | escape }}</p>
+      {%- endif -%}
+    </div>
+
+    <div class="product-upsell__grid" role="list">
+      {%- for block in section.blocks -%}
+        {%- assign upsell_product = block.settings.product -%}
+        {%- if upsell_product -%}
+          <article class="product-upsell__card" role="listitem" {{ block.shopify_attributes }}>
+            <a class="product-upsell__media" href="{{ upsell_product.url }}" aria-hidden="true" tabindex="-1">
+              {%- if upsell_product.featured_media -%}
+                {{ upsell_product.featured_media | image_url: width: 600 | image_tag:
+                  loading: 'lazy',
+                  sizes: '(min-width: 1200px) 260px, (min-width: 768px) 33vw, 50vw',
+                  widths: '180, 360, 540, 720'
+                }}
+              {%- else -%}
+                <div class="product-upsell__media-placeholder" aria-hidden="true"></div>
+              {%- endif -%}
+              {%- if block.settings.badge != blank -%}
+                <span class="product-upsell__badge">{{ block.settings.badge | escape }}</span>
+              {%- endif -%}
+            </a>
+
+            <div class="product-upsell__content">
+              <h3 class="product-upsell__product-title">
+                <a href="{{ upsell_product.url }}">{{ upsell_product.title | escape }}</a>
+              </h3>
+              <div class="product-upsell__price">
+                {%- render 'price', product: upsell_product, use_variant: true -%}
+              </div>
+              {%- if block.settings.highlight != blank -%}
+                <p class="product-upsell__highlight">{{ block.settings.highlight | escape }}</p>
+              {%- endif -%}
+              <a class="product-upsell__button" href="{{ upsell_product.url }}">{{ section.settings.button_label | escape }}</a>
+            </div>
+          </article>
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+<style>
+  #section-{{ section.id }} {
+    padding: clamp(2rem, 3vw, 3.5rem) 0;
+    background: rgba(255, 255, 255, 0.92);
+  }
+  #section-{{ section.id }} .product-upsell__header {
+    text-align: center;
+    margin-bottom: clamp(1.75rem, 3vw, 2.5rem);
+  }
+  #section-{{ section.id }} .product-upsell__title {
+    margin: 0;
+    font-size: clamp(1.65rem, 1.8vw, 2.4rem);
+  }
+  #section-{{ section.id }} .product-upsell__subtitle {
+    margin: 0.65rem auto 0;
+    max-width: 42ch;
+    color: rgba(0, 0, 0, 0.66);
+  }
+  #section-{{ section.id }} .product-upsell__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: clamp(1.5rem, 2.5vw, 2.5rem);
+  }
+  #section-{{ section.id }} .product-upsell__card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 15px 40px rgba(31, 35, 53, 0.08);
+    transition: transform 160ms ease, box-shadow 160ms ease;
+  }
+  #section-{{ section.id }} .product-upsell__card:hover,
+  #section-{{ section.id }} .product-upsell__card:focus-within {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 50px rgba(31, 35, 53, 0.14);
+  }
+  #section-{{ section.id }} .product-upsell__media {
+    position: relative;
+    display: block;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+  }
+  #section-{{ section.id }} .product-upsell__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  #section-{{ section.id }} .product-upsell__media-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.12));
+  }
+  #section-{{ section.id }} .product-upsell__badge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    padding: 0.4rem 0.8rem;
+    background: {{ settings.color_primary | default: '#ff6600' }};
+    color: #fff;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-radius: 999px;
+  }
+  #section-{{ section.id }} .product-upsell__content {
+    padding: 1.5rem 1.6rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+  #section-{{ section.id }} .product-upsell__product-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  #section-{{ section.id }} .product-upsell__product-title a {
+    color: inherit;
+    text-decoration: none;
+  }
+  #section-{{ section.id }} .product-upsell__product-title a:hover,
+  #section-{{ section.id }} .product-upsell__product-title a:focus {
+    text-decoration: underline;
+  }
+  #section-{{ section.id }} .product-upsell__price {
+    font-weight: 700;
+  }
+  #section-{{ section.id }} .product-upsell__highlight {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 0.9rem;
+  }
+  #section-{{ section.id }} .product-upsell__button {
+    margin-top: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.5rem;
+    border-radius: 999px;
+    font-weight: 700;
+    background: {{ settings.color_primary | default: '#ff6600' }};
+    color: #fff;
+    text-decoration: none;
+    transition: background 120ms ease, transform 120ms ease;
+  }
+  #section-{{ section.id }} .product-upsell__button:hover,
+  #section-{{ section.id }} .product-upsell__button:focus {
+    background: {{ settings.color_primary | default: '#ff6600' | color_modify: 'lightness', -8 }};
+    transform: translateY(-1px);
+  }
+  @media (max-width: 640px) {
+    #section-{{ section.id }} {
+      padding-inline: 1.25rem;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Product upsell grid",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Perfect pairings"
+    },
+    {
+      "type": "textarea",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Mix and match these house favorites with your custom pour."
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label",
+      "default": "View product"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "upsell",
+      "name": "Upsell product",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "text",
+          "id": "badge",
+          "label": "Badge text"
+        },
+        {
+          "type": "text",
+          "id": "highlight",
+          "label": "Highlight text"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [
+    {
+      "name": "Product upsell grid",
+      "blocks": [
+        { "type": "upsell" },
+        { "type": "upsell" },
+        { "type": "upsell" }
+      ]
+    }
+  ]
+}
+{% endschema %}

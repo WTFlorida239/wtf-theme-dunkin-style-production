@@ -55,9 +55,29 @@
         "description",
         "share"
       ]
+    },
+    "upsell": {
+      "type": "product-upsell-grid",
+      "settings": {
+        "heading": "Perfect pairings",
+        "subheading": "Customers also love these house specials.",
+        "button_label": "View product"
+      },
+      "blocks": {},
+      "block_order": []
+    },
+    "recommendations": {
+      "type": "product-recommendations",
+      "settings": {
+        "heading": "You may also like",
+        "products_to_show": 4,
+        "show_vendor": false
+      }
     }
   },
   "order": [
-    "main"
+    "main",
+    "upsell",
+    "recommendations"
   ]
 }
