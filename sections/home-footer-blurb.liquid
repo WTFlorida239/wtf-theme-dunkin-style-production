@@ -1,0 +1,163 @@
+{% liquid
+  assign background = section.settings.background | default: 'linear-gradient(135deg, rgba(255, 102, 0, 0.12) 0%, rgba(255, 255, 255, 0.92) 100%)'
+  assign eyebrow_color = section.settings.eyebrow_color | default: '#ff6600'
+  assign text_color = section.settings.text_color | default: '#212121'
+%}
+
+{%- style -%}
+  #shopify-section-{{ section.id }} .home-footer-blurb {
+    padding: clamp(3rem, 7vw, 5.5rem) 0 clamp(4rem, 8vw, 6rem);
+    background: {{ background }};
+    color: {{ text_color }};
+  }
+
+  #shopify-section-{{ section.id }} .home-footer-blurb__inner {
+    max-width: 860px;
+    margin: 0 auto;
+    text-align: center;
+    display: grid;
+    gap: clamp(1.6rem, 3vw, 2.4rem);
+  }
+
+  #shopify-section-{{ section.id }} .home-footer-blurb__eyebrow {
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-weight: 700;
+    font-size: 1.4rem;
+    color: {{ eyebrow_color }};
+  }
+
+  #shopify-section-{{ section.id }} .home-footer-blurb__title {
+    margin: 0;
+    font-size: clamp(2.3rem, 4vw, 3.4rem);
+    font-weight: 800;
+  }
+
+  #shopify-section-{{ section.id }} .home-footer-blurb__body {
+    margin: 0;
+    font-size: 1.6rem;
+    line-height: 1.7;
+    color: rgba(33, 33, 33, 0.82);
+  }
+
+  #shopify-section-{{ section.id }} .home-footer-blurb__cta {
+    justify-self: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 2.6rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #ff6600 0%, #ff8533 100%);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.6rem;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 18px 36px rgba(255, 102, 0, 0.28);
+  }
+
+  #shopify-section-{{ section.id }} .home-footer-blurb__cta:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 24px 42px rgba(255, 102, 0, 0.36);
+  }
+{%- endstyle -%}
+
+<section class="home-footer-blurb" aria-labelledby="HomeFooterBlurb-{{ section.id }}">
+  <div class="home-footer-blurb__inner page-width">
+    {% if section.settings.eyebrow != blank %}
+      <p class="home-footer-blurb__eyebrow">{{ section.settings.eyebrow }}</p>
+    {% endif %}
+
+    {% if section.settings.heading != blank %}
+      <h2 id="HomeFooterBlurb-{{ section.id }}" class="home-footer-blurb__title">
+        {{ section.settings.heading }}
+      </h2>
+    {% endif %}
+
+    {% if section.settings.body != blank %}
+      <div class="home-footer-blurb__body rte">
+        {{ section.settings.body }}
+      </div>
+    {% endif %}
+
+    {% if section.settings.button_label != blank and section.settings.button_link != blank %}
+      <a
+        class="home-footer-blurb__cta"
+        href="{{ section.settings.button_link }}"
+        {% if section.settings.open_in_new_tab %}target="_blank" rel="noopener"{% endif %}
+      >
+        {{ section.settings.button_label }}
+      </a>
+    {% endif %}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Home footer blurb",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Stay late, vibe longer"
+    },
+    {
+      "type": "color",
+      "id": "eyebrow_color",
+      "label": "Eyebrow color",
+      "default": "#ff6600"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Handcrafted botanicals poured fresh nightly"
+    },
+    {
+      "type": "richtext",
+      "id": "body",
+      "label": "Description",
+      "default": "<p>We craft small-batch kava, kratom, THC beverages, and alcohol-free elixirs that keep Cape Coral relaxed. Grab your go-to drink for pickup, or slide into the lounge for nightly specials and community events.</p>"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#212121"
+    },
+    {
+      "type": "color_background",
+      "id": "background",
+      "label": "Background",
+      "default": "linear-gradient(135deg, rgba(255, 102, 0, 0.12) 0%, rgba(255, 255, 255, 0.92) 100%)"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label",
+      "default": "Plan your visit"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link",
+      "default": "shopify://pages/locations"
+    },
+    {
+      "type": "checkbox",
+      "id": "open_in_new_tab",
+      "label": "Open button in new tab",
+      "default": false
+    }
+  ],
+  "presets": [
+    {
+      "name": "Home footer blurb"
+    }
+  ]
+}
+{% endschema %}
