@@ -1,0 +1,27 @@
+{
+  "sections": {
+    "hero": {
+      "type": "collection-hero",
+      "settings": {
+        "show_back_link": true,
+        "back_label": "Back to menu",
+        "show_description": true,
+        "fallback_description": "Discover handcrafted beverages, edibles, and botanicals curated for Cape Coral."
+      }
+    },
+    "products": {
+      "type": "collection-product-grid",
+      "settings": {
+        "products_per_page": 24,
+        "show_vendor": false,
+        "view_label": "View product",
+        "add_label": "Quick add",
+        "empty_state": "More products are steeping. Check back soon!"
+      }
+    }
+  },
+  "order": [
+    "hero",
+    "products"
+  ]
+}
